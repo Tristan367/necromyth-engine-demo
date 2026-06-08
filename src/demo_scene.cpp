@@ -6,6 +6,7 @@
 #include "scene/floor_mesh.hpp"
 #include "scene/mesh_instance.hpp"
 #include "scene/scene.hpp"
+#include "scene/shadow_utils.hpp"
 #include "scene/sky_mesh.hpp"
 
 #define GLM_FORCE_RADIANS
@@ -38,6 +39,22 @@ constexpr auto tile_array_layers = std::array{
     "ceiling0.png",
     "grass.png",
 };
+
+struct DemoAnimState {
+  std::uint32_t susan{};
+  std::uint32_t wolf{};
+  std::uint32_t suzanne{};
+  std::uint32_t torus{};
+  std::uint32_t mini_room{};
+
+  glm::mat4 susan_base{1.0F};
+  glm::mat4 wolf_base{1.0F};
+  glm::mat4 suzanne_base{1.0F};
+  glm::mat4 torus_base{1.0F};
+  glm::mat4 mini_room_base{1.0F};
+};
+
+DemoAnimState g_anim{};
 
 [[nodiscard]] auto add_cached_texture(
     engine::Scene &scene,
@@ -129,6 +146,7 @@ void populate_demo_scene(engine::Scene &scene) {
   scene.directional_light().color = glm::vec3(1.0F, 0.98F, 0.92F);
   scene.directional_light().intensity = 1.0F;
   scene.directional_light().ambient = 0.18F;
+  scene.shadow_settings() = engine::shadow_settings_from_environment();
 
   (void)scene.add_instance({
       .mesh_index = sky_mesh,
@@ -153,23 +171,25 @@ void populate_demo_scene(engine::Scene &scene) {
       .layer = engine::RenderLayer::Opaque,
   });
 
-  (void)scene.add_instance({
+  g_anim.susan_base = glm::translate(glm::mat4(1.0F), glm::vec3(-2.5F, 0.0F, -1.0F)) *
+                      glm::scale(glm::mat4(1.0F), glm::vec3(0.5F)) *
+                      susan_gltf.primitives.front().node_transform;
+  g_anim.susan = scene.add_instance({
       .mesh_index = susan_gltf_mesh,
       .texture_index = susan_gltf_texture,
       .texture_source = engine::TextureSource::Table,
-      .model = glm::translate(glm::mat4(1.0F), glm::vec3(-2.5F, 0.0F, -1.0F)) *
-               glm::scale(glm::mat4(1.0F), glm::vec3(0.5F)) *
-               susan_gltf.primitives.front().node_transform,
+      .model = g_anim.susan_base,
       .layer = engine::RenderLayer::Opaque,
   });
 
-  (void)scene.add_instance({
+  g_anim.wolf_base = glm::translate(glm::mat4(1.0F), glm::vec3(2.5F, 1.0F, -1.0F)) *
+                     glm::scale(glm::mat4(1.0F), glm::vec3(0.8F)) *
+                     wolf_gltf.primitives.front().node_transform;
+  g_anim.wolf = scene.add_instance({
       .mesh_index = wolf_mesh,
       .texture_index = wolf_texture,
       .texture_source = engine::TextureSource::Table,
-      .model = glm::translate(glm::mat4(1.0F), glm::vec3(2.5F, 1.0F, -1.0F)) *
-               glm::scale(glm::mat4(1.0F), glm::vec3(0.8F)) *
-               wolf_gltf.primitives.front().node_transform,
+      .model = g_anim.wolf_base,
       .layer = engine::RenderLayer::Opaque,
   });
 
@@ -185,31 +205,34 @@ void populate_demo_scene(engine::Scene &scene) {
       sphere_gltf,
       glm::translate(glm::mat4(1.0F), glm::vec3(1.6F, 2.4F, -2.0F)) * glm::scale(glm::mat4(1.0F), glm::vec3(0.9F)));
 
-  (void)scene.add_instance({
+  g_anim.suzanne_base = glm::translate(glm::mat4(1.0F), glm::vec3(-1.0F, 1.5F, 1.5F)) *
+                        glm::scale(glm::mat4(1.0F), glm::vec3(0.35F)) *
+                        suzanne_glb.primitives.front().node_transform;
+  g_anim.suzanne = scene.add_instance({
       .mesh_index = suzanne_glb_mesh,
       .texture_index = suzanne_glb_texture,
       .texture_source = engine::TextureSource::Table,
-      .model = glm::translate(glm::mat4(1.0F), glm::vec3(-1.0F, 1.5F, 1.5F)) *
-               glm::scale(glm::mat4(1.0F), glm::vec3(0.35F)) *
-               suzanne_glb.primitives.front().node_transform,
+      .model = g_anim.suzanne_base,
       .layer = engine::RenderLayer::Opaque,
   });
 
-  (void)scene.add_instance({
+  g_anim.torus_base = glm::translate(glm::mat4(1.0F), glm::vec3(1.5F, 1.0F, 1.5F)) *
+                      glm::scale(glm::mat4(1.0F), glm::vec3(0.8F));
+  g_anim.torus = scene.add_instance({
       .mesh_index = torus_mesh,
       .texture_index = brick_array_layer,
       .texture_source = engine::TextureSource::ArrayLayer,
-      .model = glm::translate(glm::mat4(1.0F), glm::vec3(1.5F, 1.0F, 1.5F)) *
-               glm::scale(glm::mat4(1.0F), glm::vec3(0.8F)),
+      .model = g_anim.torus_base,
       .layer = engine::RenderLayer::Opaque,
   });
 
-  (void)scene.add_instance({
+  g_anim.mini_room_base = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, -0.5F, 0.0F)) *
+                          glm::scale(glm::mat4(1.0F), glm::vec3(0.25F));
+  g_anim.mini_room = scene.add_instance({
       .mesh_index = room_mesh,
       .texture_index = dirt_table_texture,
       .texture_source = engine::TextureSource::Table,
-      .model = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, -0.5F, 0.0F)) *
-               glm::scale(glm::mat4(1.0F), glm::vec3(0.25F)),
+      .model = g_anim.mini_room_base,
       .layer = engine::RenderLayer::Opaque,
   });
 }
@@ -225,10 +248,25 @@ void update_demo_scene(engine::Scene &scene) {
   const auto current_time = std::chrono::high_resolution_clock::now();
   const float time = std::chrono::duration<float>(current_time - start_time).count();
 
-  if (scene.instances().size() >= 12)
-    scene.instance(11).model = glm::rotate(glm::mat4(1.0F), time * glm::radians(90.0F), glm::vec3(0.0F, 1.0F, 0.0F)) *
-                               glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, -0.5F, 0.0F)) *
-                               glm::scale(glm::mat4(1.0F), glm::vec3(0.25F));
+  if (g_anim.susan < scene.instances().size())
+    scene.instance(g_anim.susan).model =
+        glm::rotate(glm::mat4(1.0F), time * glm::radians(12.0F), glm::vec3(0.0F, 1.0F, 0.0F)) * g_anim.susan_base;
+
+  if (g_anim.wolf < scene.instances().size())
+    scene.instance(g_anim.wolf).model =
+        glm::rotate(glm::mat4(1.0F), time * glm::radians(-15.0F), glm::vec3(0.0F, 1.0F, 0.0F)) * g_anim.wolf_base;
+
+  if (g_anim.suzanne < scene.instances().size())
+    scene.instance(g_anim.suzanne).model =
+        glm::rotate(glm::mat4(1.0F), time * glm::radians(18.0F), glm::vec3(0.0F, 1.0F, 0.0F)) * g_anim.suzanne_base;
+
+  if (g_anim.torus < scene.instances().size())
+    scene.instance(g_anim.torus).model =
+        glm::rotate(glm::mat4(1.0F), time * glm::radians(24.0F), glm::vec3(1.0F, 0.0F, 0.0F)) * g_anim.torus_base;
+
+  if (g_anim.mini_room < scene.instances().size())
+    scene.instance(g_anim.mini_room).model =
+        glm::rotate(glm::mat4(1.0F), time * glm::radians(8.0F), glm::vec3(0.0F, 1.0F, 0.0F)) * g_anim.mini_room_base;
 }
 
 } // namespace app
