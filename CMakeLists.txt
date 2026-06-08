@@ -25,6 +25,8 @@ add_subdirectory("${VCE_ROOT}" "${CMAKE_BINARY_DIR}/vce")
 
 add_executable(VulkanCppApp
     src/main.cpp
+    src/app.cpp
+    src/demo_scene.cpp
 )
 
 target_link_libraries(VulkanCppApp PRIVATE VCE::Engine)
