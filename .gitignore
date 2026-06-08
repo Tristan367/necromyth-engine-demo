@@ -1,0 +1,10 @@
+*
+!.gitignore
+!README.md
+!CMakeLists.txt
+!Makefile
+!src/
+!src/**
+!assets/
+!assets/**
+assets/models/.gltf_cache/
