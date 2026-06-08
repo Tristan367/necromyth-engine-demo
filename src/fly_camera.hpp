@@ -74,8 +74,8 @@ public:
         (keyboard[SDL_SCANCODE_S] ? -forward : glm::vec3(0.0F)) +
         (keyboard[SDL_SCANCODE_D] ? right : glm::vec3(0.0F)) +
         (keyboard[SDL_SCANCODE_A] ? -right : glm::vec3(0.0F)) +
-        (keyboard[SDL_SCANCODE_E] ? up : glm::vec3(0.0F)) +
-        (keyboard[SDL_SCANCODE_Q] ? -up : glm::vec3(0.0F));
+        (keyboard[SDL_SCANCODE_SPACE] ? up : glm::vec3(0.0F)) +
+        (keyboard[SDL_SCANCODE_C] ? -up : glm::vec3(0.0F));
 
     if (glm::length(velocity) > 0.0F)
       position_ += glm::normalize(velocity) * speed * delta_seconds;

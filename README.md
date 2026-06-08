@@ -35,7 +35,7 @@ Each import path is exercised with real assets from `~/3D Models`:
 
 ## Controls
 
-Fly camera: click in the window to look (cursor hidden), Esc to release, WASD move, Q/E vertical, Shift sprint. Esc again (when not captured) quits.
+Fly camera: click in the window to look (cursor hidden), Esc to release, WASD move, Space/C vertical, Shift sprint. Esc again (when not captured) quits.
 
 ## Lighting
 
