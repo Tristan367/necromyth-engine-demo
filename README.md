@@ -37,6 +37,8 @@ Each import path is exercised with real assets from `~/3D Models`:
 
 Fly camera: click in the window to look (cursor hidden), Esc to release, WASD move, Space/C vertical, Shift sprint. Esc again (when not captured) quits.
 
-## Lighting
+## Lighting and shadows
 
-A single directional sun lives in the frame UBO (`Scene::directional_light()`). The textured mesh shader applies ambient + Lambert diffuse — same light will drive shadow maps later.
+A single directional sun lives in the frame UBO (`Scene::directional_light()`). The textured mesh shader applies ambient + Lambert diffuse modulated by a **2048×2048** directional shadow map (view-frustum-fitted ortho from the engine — see Vulkan-C-Engine `README.md` / `shadow_utils.hpp`).
+
+Slow rotation on several props is intentional so shadow quality is easy to inspect while flying the camera.
