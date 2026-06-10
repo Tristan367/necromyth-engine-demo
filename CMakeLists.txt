@@ -23,13 +23,41 @@ endif()
 
 add_subdirectory("${VCE_ROOT}" "${CMAKE_BINARY_DIR}/vce")
 
+find_package(Vulkan REQUIRED)
+find_package(SDL3 CONFIG REQUIRED)
+
+include(FetchContent)
+FetchContent_Declare(
+    imgui
+    GIT_REPOSITORY https://github.com/ocornut/imgui.git
+    GIT_TAG v1.91.9
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(imgui)
+
+add_library(app_imgui STATIC
+    ${imgui_SOURCE_DIR}/imgui.cpp
+    ${imgui_SOURCE_DIR}/imgui_draw.cpp
+    ${imgui_SOURCE_DIR}/imgui_tables.cpp
+    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp
+)
+target_include_directories(app_imgui PUBLIC
+    ${imgui_SOURCE_DIR}
+    ${imgui_SOURCE_DIR}/backends
+)
+target_link_libraries(app_imgui PUBLIC SDL3::SDL3 Vulkan::Vulkan)
+target_compile_definitions(app_imgui PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
+
 add_executable(VulkanCppApp
     src/main.cpp
     src/app.cpp
     src/demo_scene.cpp
+    src/debug_ui.cpp
 )
 
-target_link_libraries(VulkanCppApp PRIVATE VCE::Engine)
+target_link_libraries(VulkanCppApp PRIVATE VCE::Engine app_imgui)
 
 target_compile_definitions(VulkanCppApp PRIVATE
     APP_ASSETS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets"

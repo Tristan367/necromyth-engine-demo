@@ -5,8 +5,13 @@ Demo and game client for [Vulkan-C-Engine](../Vulkan-C-Engine).
 ## Build
 
 ```bash
-make debug
+make              # Release build  -> build-Release/
+make run          # Release build + run
+make debug        # Debug build only -> build-Debug/
+make debug run    # Debug build + run
 ```
+
+Debug and Release use **separate** build directories so `make debug` then `make run` does not reconfigure your Debug tree as Release.
 
 Requires sibling checkout:
 
@@ -36,6 +41,8 @@ Each import path is exercised with real assets from `~/3D Models`:
 ## Controls
 
 Fly camera: click in the window to look (cursor hidden), Esc to release, WASD move, Space/C vertical, Shift sprint. Esc again (when not captured) quits.
+
+**Debug UI:** ImGui overlay (FPS, present mode, shadow filter/focus toggles). Focus the debug window to use widgets; fly camera pauses keyboard capture while ImGui has focus. Uncap FPS with `ENGINE_PRESENT=mailbox`.
 
 ## Lighting and shadows
 
