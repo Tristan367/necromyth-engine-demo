@@ -51,3 +51,7 @@ Fly mode: WASD move, Space/C vertical, Shift sprint.
 A single directional sun lives in the frame UBO (`Scene::directional_light()`). The textured mesh shader applies ambient + Lambert diffuse modulated by a **2048×2048** directional shadow map (view-frustum-fitted ortho from the engine — see Vulkan-C-Engine `README.md` / `shadow_utils.hpp`).
 
 Slow rotation on several props is intentional so shadow quality is easy to inspect while flying the camera.
+
+## License
+
+[MIT](LICENSE) — same terms as [Necromyth Engine](https://github.com/Tristan367/necromyth-engine). Engine contributions: see [CONTRIBUTING.md](https://github.com/Tristan367/necromyth-engine/blob/master/CONTRIBUTING.md).
