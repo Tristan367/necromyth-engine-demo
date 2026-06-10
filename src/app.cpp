@@ -88,7 +88,8 @@ void DemoApp::run() {
     while (SDL_PollEvent(&event)) {
       impl.input.process_event(event, impl.debug_ui, impl.fly_camera);
 
-      if (event.type == SDL_EVENT_WINDOW_RESIZED)
+      if (event.type == SDL_EVENT_WINDOW_RESIZED ||
+          event.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED)
         impl.vulkan.mark_framebuffer_resized();
     }
 

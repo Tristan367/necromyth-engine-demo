@@ -1,6 +1,6 @@
-# Vulkan C++ App
+# Necromyth Engine Demo
 
-Demo and game client for [Vulkan-C-Engine](../Vulkan-C-Engine).
+Reference client and tech demo for [Necromyth Engine](https://github.com/Tristan367/necromyth-engine).
 
 ## Build
 
@@ -13,12 +13,12 @@ make debug run    # Debug build + run
 
 Debug and Release use **separate** build directories so `make debug` then `make run` does not reconfigure your Debug tree as Release.
 
-Requires sibling checkout:
+Requires a checkout of the engine (sibling directory or set `VCE_ROOT`):
 
 ```
 Projects/
-  Vulkan-C-Engine/
-  Vulkan-C-App/
+  necromyth-engine/       # or Vulkan-C-Engine
+  necromyth-engine-demo/  # this repo
 ```
 
 ## Demo scene

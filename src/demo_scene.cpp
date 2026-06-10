@@ -200,7 +200,7 @@ void populate_demo_scene(engine::Scene &scene) {
       .texture_index = alpha_test_texture,
       .texture_source = engine::TextureSource::Table,
       .model = lifted(glm::translate(glm::mat4(1.0F), glm::vec3(-3.5F, 0.0F, 2.0F))),
-      .layer = engine::RenderLayer::Transparent,
+      .layer = engine::RenderLayer::AlphaTested,
       .alpha_mode = engine::MeshAlphaMode::Cutout,
   });
 
@@ -209,7 +209,7 @@ void populate_demo_scene(engine::Scene &scene) {
       .texture_index = alpha_test_texture,
       .texture_source = engine::TextureSource::Table,
       .model = lifted(glm::translate(glm::mat4(1.0F), glm::vec3(-1.8F, 0.0F, 2.0F))),
-      .layer = engine::RenderLayer::Transparent,
+      .layer = engine::RenderLayer::AlphaTested,
       .alpha_mode = engine::MeshAlphaMode::AlphaToCoverage,
   });
 
