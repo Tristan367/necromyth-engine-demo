@@ -29,6 +29,23 @@ public:
     return captured_;
   }
 
+  void toggle_capture() {
+    set_capture(!captured_);
+  }
+
+  void set_capture(bool enabled) {
+    if (window_ == nullptr)
+      return;
+
+    if (enabled) {
+      if (!captured_ && SDL_SetWindowRelativeMouseMode(window_, true))
+        captured_ = true;
+      return;
+    }
+
+    release_capture();
+  }
+
   void release_capture() {
     if (window_ == nullptr || !captured_)
       return;
@@ -45,14 +62,9 @@ public:
   }
 
   void handle_event(const SDL_Event &event) {
-    if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT) {
-      if (!captured_)
-        enable_capture();
-    } else if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_ESCAPE) {
+    if (event.type == SDL_EVENT_WINDOW_FOCUS_LOST)
       release_capture();
-    } else if (event.type == SDL_EVENT_WINDOW_FOCUS_LOST) {
-      release_capture();
-    } else if (event.type == SDL_EVENT_MOUSE_MOTION && captured_) {
+    else if (event.type == SDL_EVENT_MOUSE_MOTION && captured_) {
       yaw_ += event.motion.xrel * mouse_sensitivity_;
       pitch_ -= event.motion.yrel * mouse_sensitivity_;
       pitch_ = std::clamp(pitch_, -glm::half_pi<float>() + 0.01F, glm::half_pi<float>() - 0.01F);
@@ -84,14 +96,6 @@ public:
   }
 
 private:
-  void enable_capture() {
-    if (window_ == nullptr || captured_)
-      return;
-
-    if (SDL_SetWindowRelativeMouseMode(window_, true))
-      captured_ = true;
-  }
-
   [[nodiscard]] auto orientation_forward() const -> glm::vec3 {
     const float cos_pitch = std::cos(pitch_);
     return glm::normalize(glm::vec3{

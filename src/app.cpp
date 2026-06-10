@@ -3,6 +3,7 @@
 #include "debug_ui.hpp"
 #include "demo_scene.hpp"
 #include "fly_camera.hpp"
+#include "input_router.hpp"
 
 #include "platform/sdl_window.hpp"
 #include "renderer/vulkan_context.hpp"
@@ -10,8 +11,6 @@
 
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_timer.h>
-
-#include <imgui.h>
 
 #include <csignal>
 #include <iostream>
@@ -37,7 +36,8 @@ struct DemoApp::Impl {
   engine::VulkanContext vulkan;
   DebugUi debug_ui;
   FlyCameraController fly_camera;
-  std::uint64_t last_ticks{};
+  InputRouter input;
+  std::uint64_t last_frame_counter{};
   bool running{true};
 
   explicit Impl(engine::EngineConfig config_in)
@@ -50,7 +50,7 @@ struct DemoApp::Impl {
     std::signal(SIGTERM, on_quit_signal);
     fly_camera.set_window(window.handle());
     fly_camera.sync_from(scene.camera());
-    last_ticks = SDL_GetTicks();
+    last_frame_counter = SDL_GetPerformanceCounter();
 
     vulkan.set_frame_overlay([this](const engine::FrameOverlayContext &context) {
       debug_ui.record_overlay(context);
@@ -59,8 +59,8 @@ struct DemoApp::Impl {
     std::cout << "Selected GPU: " << vulkan.gpu_name();
     if (config.gpu_device_index)
       std::cout << " (requested index " << *config.gpu_device_index << ')';
-    std::cout << "\nFly camera: click to look, Esc to release, WASD move, Space/C vertical, Shift sprint\n";
-    std::cout << "Debug UI: ImGui overlay (shadow toggles, FPS)\n";
+    std::cout << "\nEsc: menu / resume fly mode. WASD move, Space/C vertical, Shift sprint.\n";
+    std::cout << "Menu: Resume or Quit. Debug panel: shadow toggles, FPS.\n";
   }
 
   ~Impl() {
@@ -79,37 +79,38 @@ void DemoApp::run() {
     if (g_quit_requested != 0)
       impl.running = false;
 
-    const std::uint64_t now_ticks = SDL_GetTicks();
-    const float delta_seconds = static_cast<float>(now_ticks - impl.last_ticks) / 1000.0F;
-    impl.last_ticks = now_ticks;
+    const std::uint64_t now_counter = SDL_GetPerformanceCounter();
+    const float delta_seconds =
+        static_cast<float>(now_counter - impl.last_frame_counter) / static_cast<float>(SDL_GetPerformanceFrequency());
+    impl.last_frame_counter = now_counter;
 
     SDL_Event event{};
     while (SDL_PollEvent(&event)) {
-      if (event.type == SDL_EVENT_QUIT)
-        impl.running = false;
-
-      (void)impl.debug_ui.process_event(event);
+      impl.input.process_event(event, impl.debug_ui, impl.fly_camera);
 
       if (event.type == SDL_EVENT_WINDOW_RESIZED)
         impl.vulkan.mark_framebuffer_resized();
-
-      if (ImGui::GetIO().WantCaptureKeyboard)
-        continue;
-
-      if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_ESCAPE && !impl.fly_camera.capture_active())
-        impl.running = false;
-      else
-        impl.fly_camera.handle_event(event);
     }
+
+    if (impl.input.quit_requested())
+      impl.running = false;
 
     if (!impl.running)
       break;
 
-    if (!ImGui::GetIO().WantCaptureKeyboard)
+    const bool menu_open = !impl.fly_camera.capture_active();
+
+    if (impl.input.should_update_camera(impl.debug_ui, impl.fly_camera))
       impl.fly_camera.update(impl.scene.camera(), delta_seconds);
 
     update_demo_scene(impl.scene);
-    impl.debug_ui.begin_frame(impl.scene, delta_seconds);
+    const UiFrameResult ui = impl.debug_ui.begin_frame(impl.scene, delta_seconds, menu_open);
+
+    if (ui.quit_requested)
+      impl.running = false;
+    if (ui.resume_requested)
+      impl.fly_camera.set_capture(true);
+
     impl.vulkan.draw_frame(impl.scene);
   }
 

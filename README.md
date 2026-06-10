@@ -40,9 +40,11 @@ Each import path is exercised with real assets from `~/3D Models`:
 
 ## Controls
 
-Fly camera: click in the window to look (cursor hidden), Esc to release, WASD move, Space/C vertical, Shift sprint. Esc again (when not captured) quits.
+**Menu (default):** cursor visible. **Resume** or **Esc** enters fly mode (cursor hidden). **Esc** again opens the menu. **Quit** exits from the menu (window close and Ctrl+C still work).
 
-**Debug UI:** ImGui overlay (FPS, present mode, shadow filter/focus toggles). Focus the debug window to use widgets; fly camera pauses keyboard capture while ImGui has focus. Uncap FPS with `ENGINE_PRESENT=mailbox`.
+Fly mode: WASD move, Space/C vertical, Shift sprint.
+
+**Debug UI:** separate panel (FPS, shadow toggles). Usable while the menu is open. Uncap FPS with `ENGINE_PRESENT=mailbox`.
 
 ## Lighting and shadows
 

@@ -27,8 +27,6 @@ void check_vk_result(VkResult result) {
     return "Hard";
   case engine::ShadowFilterMode::Pcf3x3:
     return "PCF 3x3";
-  case engine::ShadowFilterMode::Poisson16:
-    return "Poisson 16";
   }
   return "Unknown";
 }
@@ -130,7 +128,17 @@ auto DebugUi::process_event(const SDL_Event &event) -> bool {
   return ImGui_ImplSDL3_ProcessEvent(&event);
 }
 
-void DebugUi::begin_frame(engine::Scene &scene, float frame_delta_seconds) {
+auto DebugUi::wants_keyboard() const -> bool {
+  return ImGui::GetIO().WantCaptureKeyboard;
+}
+
+auto DebugUi::wants_mouse() const -> bool {
+  return ImGui::GetIO().WantCaptureMouse;
+}
+
+auto DebugUi::begin_frame(engine::Scene &scene, float frame_delta_seconds, bool menu_open) -> UiFrameResult {
+  UiFrameResult result{};
+
   impl_->sync_swapchain();
 
   if (frame_delta_seconds > 0.0F) {
@@ -143,10 +151,29 @@ void DebugUi::begin_frame(engine::Scene &scene, float frame_delta_seconds) {
   ImGui_ImplVulkan_NewFrame();
   ImGui::NewFrame();
 
+  if (menu_open) {
+    const ImGuiViewport *viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(viewport->GetCenter(), ImGuiCond_Always, ImVec2(0.5F, 0.5F));
+    ImGui::SetNextWindowSize(ImVec2(280.0F, 0.0F), ImGuiCond_Always);
+    if (ImGui::Begin("Menu", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) {
+      ImGui::TextUnformatted("Paused");
+      ImGui::Separator();
+      if (ImGui::Button("Resume (Esc)", ImVec2(-1.0F, 0.0F)))
+        result.resume_requested = true;
+      if (ImGui::Button("Quit", ImVec2(-1.0F, 0.0F)))
+        result.quit_requested = true;
+      ImGui::TextDisabled("Esc toggles fly mode");
+    }
+    ImGui::End();
+  }
+
   ImGui::SetNextWindowPos(ImVec2(10.0F, 10.0F), ImGuiCond_FirstUseEver);
   ImGui::SetNextWindowSize(ImVec2(320.0F, 0.0F), ImGuiCond_FirstUseEver);
   if (ImGui::Begin("Debug", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
     ImGui::Text("FPS: %.1f", impl_->fps_smoothed_);
+    if (frame_delta_seconds > 0.0F)
+      ImGui::Text("Frame: %.2f ms", frame_delta_seconds * 1000.0F);
+    ImGui::Text("Instances: %zu", scene.instances().size());
     ImGui::Text("GPU: %s", impl_->vulkan->gpu_name().c_str());
     const char *present = engine::present_mode_name(impl_->vulkan->present_mode());
     ImGui::Text("Present: %s", present);
@@ -155,12 +182,8 @@ void DebugUi::begin_frame(engine::Scene &scene, float frame_delta_seconds) {
     ImGui::Separator();
 
     engine::DirectionalLightShadowSettings &shadow = scene.shadow_settings();
-    int filter_index = static_cast<int>(shadow.filter_mode);
-    const char *filter_labels[] = {"Hard", "PCF 3x3", "Poisson 16"};
-    if (ImGui::Combo("Shadow filter", &filter_index, filter_labels, IM_ARRAYSIZE(filter_labels)))
-      shadow.filter_mode = static_cast<engine::ShadowFilterMode>(filter_index);
-    else
-      ImGui::Text("Active: %s", to_c_string(shadow.filter_mode));
+    ImGui::Text("Shadow filter: %s", to_c_string(shadow.filter_mode));
+    ImGui::TextDisabled("Restart to change (ENGINE_SHADOW_FILTER)");
 
     int focus_index = static_cast<int>(shadow.focus_mode);
     const char *focus_labels[] = {"Camera footprint", "View wedge"};
@@ -169,12 +192,13 @@ void DebugUi::begin_frame(engine::Scene &scene, float frame_delta_seconds) {
     else
       ImGui::Text("Focus: %s", to_c_string(shadow.focus_mode));
 
-    ImGui::Checkbox("Point shadow filter", &shadow.point_shadow_filter);
+    ImGui::Text("Point shadow filter: %s", shadow.point_shadow_filter ? "nearest" : "linear");
     ImGui::Checkbox("Texel snap", &shadow.texel_snapping);
   }
   ImGui::End();
 
   ImGui::Render();
+  return result;
 }
 
 void DebugUi::record_overlay(const engine::FrameOverlayContext &context) {

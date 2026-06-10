@@ -54,6 +54,8 @@ add_executable(VulkanCppApp
     src/main.cpp
     src/app.cpp
     src/demo_scene.cpp
+    src/demo_assets.cpp
+    src/demo_anim.cpp
     src/debug_ui.cpp
 )
 
