@@ -194,6 +194,8 @@ auto DebugUi::begin_frame(engine::Scene &scene, float frame_delta_seconds, bool 
 
     ImGui::Text("Point shadow filter: %s", shadow.point_shadow_filter ? "nearest" : "linear");
     ImGui::Checkbox("Texel snap", &shadow.texel_snapping);
+    ImGui::Checkbox("Coverage fade", &shadow.coverage_fade);
+    ImGui::SliderFloat("Fade width", &shadow.coverage_fade_uv_width, 0.0F, 0.25F, "%.3f");
   }
   ImGui::End();
 
