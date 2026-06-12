@@ -72,7 +72,6 @@ target_link_libraries(NecromythDemo PRIVATE VCE::Engine app_imgui)
 
 target_compile_definitions(NecromythDemo PRIVATE
     APP_ASSETS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets"
-    APP_VCE_ASSETS="${VCE_ROOT}/assets"
 )
 
 set_target_properties(NecromythDemo PROPERTIES

@@ -27,14 +27,14 @@ Each import path is exercised with real assets from `~/3D Models`:
 
 | Object | Import | Mesh | Texture |
 |---|---|---|---|
-| Viking room | `.obj` (engine asset) | `viking_room.obj` | `viking_room.png` |
 | Susan | `.gltf` + `.bin` | `susan.gltf` | `uvTest.png` (sidecar) |
 | Wolf torus | `.gltf` + `.bin` | `wolf-thing.gltf` | `wolf.jpg` (sidecar) |
 | Sphere (GLB) | `.glb` embedded textures | `sphere.glb` | 2 primitives, 2 embedded PNGs |
 | Sphere (glTF) | `.gltf` + sidecars | `sphere.gltf` | same mesh, external PNGs |
 | Suzanne | `.glb` | `Suzanne.glb` | reuses uvTest |
 | Torus | `.obj` | `Torus.obj` | **array layer 0** (`brick.png`) |
-| Small room | `.obj` | viking mesh | `dirt.png` tile (spinning) |
+| Floor / alpha quads | procedural (`demo_meshes.hpp`) | — | tile / alphaTest textures |
+| Spinning torus | `.obj` | `Torus.obj` | `dirt.png` tile |
 
 **glTF vs GLB:** `.glb` packs mesh + optional textures into one binary — great for simple exports. `.gltf` + sidecar files (`.bin`, `.png`, `.jpg`) is the same format split across files; textures stay as separate images next to the `.gltf`.
 

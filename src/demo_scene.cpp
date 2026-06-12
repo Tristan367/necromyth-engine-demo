@@ -2,10 +2,10 @@
 
 #include "demo_anim.hpp"
 #include "demo_assets.hpp"
+#include "demo_meshes.hpp"
 #include "scene/mesh_instance.hpp"
 #include "scene/scene.hpp"
 #include "scene/shadow_utils.hpp"
-#include "scene/upright_quad_mesh.hpp"
 #include "scene_instance.hpp"
 
 #define GLM_FORCE_RADIANS
@@ -57,14 +57,6 @@ void populate_demo_scene(engine::Scene &scene) {
       .texture_index = assets.dirt_table_texture,
       .texture_source = engine::TextureSource::Table,
       .model = glm::mat4(1.0F),
-      .layer = engine::RenderLayer::Opaque,
-  });
-
-  (void)scene.add_instance({
-      .mesh_index = assets.room_mesh,
-      .texture_index = assets.viking_texture,
-      .texture_source = engine::TextureSource::Table,
-      .model = lifted(glm::mat4(1.0F)),
       .layer = engine::RenderLayer::Opaque,
   });
 
@@ -125,16 +117,17 @@ void populate_demo_scene(engine::Scene &scene) {
       24.0F,
       glm::vec3(1.0F, 0.0F, 0.0F));
 
-  const glm::mat4 mini_room_base = lifted(glm::vec3(0.0F, -0.5F, 0.0F)) * glm::scale(glm::mat4(1.0F), glm::vec3(0.25F));
+  const glm::mat4 spin_torus_base =
+      lifted(glm::vec3(0.0F, -0.5F, 0.0F)) * glm::scale(glm::mat4(1.0F), glm::vec3(1.1F));
   demo_anim_add(
       SceneInstance(scene.add_instance({
-          .mesh_index = assets.room_mesh,
+          .mesh_index = assets.torus_mesh,
           .texture_index = assets.dirt_table_texture,
           .texture_source = engine::TextureSource::Table,
-          .model = mini_room_base,
+          .model = spin_torus_base,
           .layer = engine::RenderLayer::Opaque,
       })),
-      mini_room_base,
+      spin_torus_base,
       8.0F,
       glm::vec3(0.0F, 1.0F, 0.0F));
 
@@ -193,7 +186,7 @@ void populate_demo_scene(engine::Scene &scene) {
   }
 
   const std::uint32_t alpha_test_texture = scene.add_texture(asset_path("/textures/alphaTest.png"));
-  const std::uint32_t alpha_quad_mesh = scene.add_mesh(engine::make_upright_quad_mesh(1.4F, 1.8F));
+  const std::uint32_t alpha_quad_mesh = scene.add_mesh(make_upright_quad_mesh(1.4F, 1.8F));
 
   (void)scene.add_instance({
       .mesh_index = alpha_quad_mesh,

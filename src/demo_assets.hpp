@@ -15,13 +15,11 @@ struct LoadedGltfModel;
 namespace app {
 
 [[nodiscard]] auto asset_path(std::string_view relative) -> std::string;
-[[nodiscard]] auto engine_asset_path(std::string_view relative) -> std::string;
 
 [[nodiscard]] auto lifted(glm::vec3 position) -> glm::mat4;
 [[nodiscard]] auto lifted(glm::mat4 transform) -> glm::mat4;
 
 struct DemoMeshLibrary {
-  std::uint32_t room_mesh{};
   std::uint32_t susan_gltf_mesh{};
   std::uint32_t wolf_mesh{};
   std::uint32_t suzanne_glb_mesh{};
@@ -29,7 +27,6 @@ struct DemoMeshLibrary {
   std::uint32_t sky_mesh{};
   std::uint32_t floor_mesh{};
 
-  std::uint32_t viking_texture{};
   std::uint32_t dirt_table_texture{};
   std::uint32_t susan_gltf_texture{};
   std::uint32_t wolf_texture{};

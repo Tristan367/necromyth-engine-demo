@@ -1,8 +1,8 @@
 #include "demo_assets.hpp"
 
+#include "demo_meshes.hpp"
 #include "renderer/gltf_loader.hpp"
 #include "renderer/model_loader.hpp"
-#include "scene/floor_mesh.hpp"
 #include "scene/mesh_instance.hpp"
 #include "scene/scene.hpp"
 #include "scene/sky_mesh.hpp"
@@ -63,10 +63,6 @@ constexpr auto tile_array_layers = std::array{
   return std::string(APP_ASSETS_DIR) + std::string(relative);
 }
 
-[[nodiscard]] auto engine_asset_path(std::string_view relative) -> std::string {
-  return std::string(APP_VCE_ASSETS) + std::string(relative);
-}
-
 [[nodiscard]] auto lifted(glm::vec3 position) -> glm::mat4 {
   return glm::translate(glm::mat4(1.0F), glm::vec3(position.x, position.y + k_scene_lift_y, position.z));
 }
@@ -99,9 +95,6 @@ void add_gltf_model_instances(
 
   DemoMeshLibrary library{};
 
-  const engine::LoadedMesh room_loaded = engine::load_obj_model(engine_asset_path("/models/viking_room.obj"));
-  library.room_mesh = scene.add_mesh({.vertices = room_loaded.vertices, .indices = room_loaded.indices});
-
   const engine::LoadedGltfModel susan_gltf = engine::load_gltf_model(asset_path("/models/susan.gltf"));
   const engine::LoadedGltfModel wolf_gltf = engine::load_gltf_model(asset_path("/models/wolf-thing.gltf"));
   const engine::LoadedGltfModel suzanne_glb = engine::load_gltf_model(asset_path("/models/Suzanne.glb"));
@@ -118,10 +111,8 @@ void add_gltf_model_instances(
   library.torus_mesh = scene.add_mesh({.vertices = torus_loaded.vertices, .indices = torus_loaded.indices});
 
   library.sky_mesh = scene.add_mesh(engine::make_sky_cube_mesh());
-  library.floor_mesh = scene.add_mesh(engine::make_floor_quad_mesh(25.0F));
+  library.floor_mesh = scene.add_mesh(make_floor_quad_mesh(25.0F));
 
-  library.viking_texture =
-      add_cached_texture(scene, texture_cache, engine_asset_path("/textures/viking_room.png"));
   library.dirt_table_texture = add_cached_texture(scene, texture_cache, asset_path("/textures/tiles/dirt.png"));
   library.susan_gltf_texture = texture_for_gltf_material(scene, texture_cache, susan_gltf.primitives.front().material);
   library.wolf_texture = texture_for_gltf_material(scene, texture_cache, wolf_gltf.primitives.front().material);
