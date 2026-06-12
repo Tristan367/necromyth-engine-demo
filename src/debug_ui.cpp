@@ -194,7 +194,6 @@ auto DebugUi::begin_frame(engine::Scene &scene, float frame_delta_seconds, bool 
 
     ImGui::Text("Cascades: %s", shadow.cascade_mode == engine::ShadowCascadeMode::Dual ? "dual" : "single");
     ImGui::TextDisabled("Restart to change (ENGINE_SHADOW_CASCADES=1|2)");
-    ImGui::Checkbox("Texel snap", &shadow.texel_snapping);
     ImGui::SliderFloat("Fade width", &shadow.coverage_fade_uv_width, 0.0F, 0.25F, "%.3f");
     if (shadow.cascade_mode == engine::ShadowCascadeMode::Dual)
       ImGui::SliderFloat("Blend width (m)", &shadow.cascade_blend_range, 0.5F, 20.0F, "%.1f");
