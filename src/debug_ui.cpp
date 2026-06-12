@@ -31,16 +31,6 @@ void check_vk_result(VkResult result) {
   return "Unknown";
 }
 
-[[nodiscard]] auto to_c_string(engine::ShadowFocusMode mode) -> const char * {
-  switch (mode) {
-  case engine::ShadowFocusMode::CameraFootprint:
-    return "Camera footprint";
-  case engine::ShadowFocusMode::ViewWedge:
-    return "View wedge";
-  }
-  return "Unknown";
-}
-
 } // namespace
 
 struct DebugUi::Impl {
@@ -48,6 +38,9 @@ struct DebugUi::Impl {
   engine::VulkanContext *vulkan{};
   vk::Extent2D last_extent_{};
   float fps_smoothed_{};
+  float fps_one_second_avg_{};
+  float fps_window_elapsed_{};
+  std::uint32_t fps_window_frames_{};
   bool initialized{false};
 
   explicit Impl(SDL_Window *window_in, engine::VulkanContext &vulkan_in)
@@ -145,6 +138,15 @@ auto DebugUi::begin_frame(engine::Scene &scene, float frame_delta_seconds, bool 
     const float instant_fps = 1.0F / frame_delta_seconds;
     impl_->fps_smoothed_ =
         impl_->fps_smoothed_ <= 0.0F ? instant_fps : impl_->fps_smoothed_ * 0.9F + instant_fps * 0.1F;
+
+    impl_->fps_window_elapsed_ += frame_delta_seconds;
+    ++impl_->fps_window_frames_;
+    if (impl_->fps_window_elapsed_ >= 1.0F) {
+      impl_->fps_one_second_avg_ =
+          static_cast<float>(impl_->fps_window_frames_) / impl_->fps_window_elapsed_;
+      impl_->fps_window_elapsed_ = 0.0F;
+      impl_->fps_window_frames_ = 0;
+    }
   }
 
   ImGui_ImplSDL3_NewFrame();
@@ -171,6 +173,11 @@ auto DebugUi::begin_frame(engine::Scene &scene, float frame_delta_seconds, bool 
   ImGui::SetNextWindowSize(ImVec2(320.0F, 0.0F), ImGuiCond_FirstUseEver);
   if (ImGui::Begin("Debug", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
     ImGui::Text("FPS: %.1f", impl_->fps_smoothed_);
+    ImGui::SameLine();
+    if (impl_->fps_one_second_avg_ > 0.0F)
+      ImGui::Text("(1s: %.1f)", impl_->fps_one_second_avg_);
+    else
+      ImGui::TextDisabled("(1s: …)");
     if (frame_delta_seconds > 0.0F)
       ImGui::Text("Frame: %.2f ms", frame_delta_seconds * 1000.0F);
     ImGui::Text("Instances: %zu", scene.instances().size());
@@ -185,20 +192,12 @@ auto DebugUi::begin_frame(engine::Scene &scene, float frame_delta_seconds, bool 
     ImGui::Text("Shadow filter: %s", to_c_string(shadow.filter_mode));
     ImGui::TextDisabled("Restart to change (ENGINE_SHADOW_FILTER)");
 
-    int focus_index = static_cast<int>(shadow.focus_mode);
-    const char *focus_labels[] = {"Camera footprint", "View wedge"};
-    if (ImGui::Combo("Shadow focus", &focus_index, focus_labels, IM_ARRAYSIZE(focus_labels)))
-      shadow.focus_mode = static_cast<engine::ShadowFocusMode>(focus_index);
-    else
-      ImGui::Text("Focus: %s", to_c_string(shadow.focus_mode));
-
-    ImGui::Text("Point shadow filter: %s", shadow.point_shadow_filter ? "nearest" : "linear");
     ImGui::Text("Cascades: %s", shadow.cascade_mode == engine::ShadowCascadeMode::Dual ? "dual" : "single");
     ImGui::TextDisabled("Restart to change (ENGINE_SHADOW_CASCADES=1|2)");
     ImGui::Checkbox("Texel snap", &shadow.texel_snapping);
     ImGui::SliderFloat("Fade width", &shadow.coverage_fade_uv_width, 0.0F, 0.25F, "%.3f");
     if (shadow.cascade_mode == engine::ShadowCascadeMode::Dual)
-      ImGui::SliderFloat("Split blend", &shadow.cascade_blend_range, 0.0F, 20.0F, "%.1f");
+      ImGui::SliderFloat("Blend width (m)", &shadow.cascade_blend_range, 0.5F, 20.0F, "%.1f");
   }
   ImGui::End();
 

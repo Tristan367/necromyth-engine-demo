@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.24 FATAL_ERROR)
 
-project(VulkanCppApp LANGUAGES CXX)
+project(NecromythDemo LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -12,9 +12,18 @@ if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
 
-set(VCE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../Vulkan-C-Engine" CACHE PATH "Vulkan C++ Engine repository root")
+if(NOT VCE_ROOT)
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../necromyth-engine/CMakeLists.txt")
+        set(VCE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../necromyth-engine")
+    elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../Vulkan-C-Engine/CMakeLists.txt")
+        set(VCE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../Vulkan-C-Engine")
+    else()
+        set(VCE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../necromyth-engine")
+    endif()
+endif()
+set(VCE_ROOT "${VCE_ROOT}" CACHE PATH "Necromyth Engine repository root")
 if(NOT EXISTS "${VCE_ROOT}/CMakeLists.txt")
-    message(FATAL_ERROR "VCE_ROOT does not point to Vulkan-C-Engine: ${VCE_ROOT}")
+    message(FATAL_ERROR "VCE_ROOT does not point to Necromyth Engine: ${VCE_ROOT}")
 endif()
 
 if(NOT VULKAN_SDK_ROOT AND DEFINED ENV{VULKAN_SDK})
@@ -50,7 +59,7 @@ target_include_directories(app_imgui PUBLIC
 target_link_libraries(app_imgui PUBLIC SDL3::SDL3 Vulkan::Vulkan)
 target_compile_definitions(app_imgui PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
 
-add_executable(VulkanCppApp
+add_executable(NecromythDemo
     src/main.cpp
     src/app.cpp
     src/demo_scene.cpp
@@ -59,14 +68,14 @@ add_executable(VulkanCppApp
     src/debug_ui.cpp
 )
 
-target_link_libraries(VulkanCppApp PRIVATE VCE::Engine app_imgui)
+target_link_libraries(NecromythDemo PRIVATE VCE::Engine app_imgui)
 
-target_compile_definitions(VulkanCppApp PRIVATE
+target_compile_definitions(NecromythDemo PRIVATE
     APP_ASSETS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets"
     APP_VCE_ASSETS="${VCE_ROOT}/assets"
 )
 
-set_target_properties(VulkanCppApp PROPERTIES
+set_target_properties(NecromythDemo PROPERTIES
     DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
@@ -78,8 +87,8 @@ if(VULKAN_SDK_ROOT AND IS_DIRECTORY "${VULKAN_SDK_ROOT}/lib")
 endif()
 
 add_custom_target(run
-    COMMAND "${CMAKE_COMMAND}" -E env ${_run_env_vars} "$<TARGET_FILE:VulkanCppApp>"
-    DEPENDS VulkanCppApp
+    COMMAND "${CMAKE_COMMAND}" -E env ${_run_env_vars} "$<TARGET_FILE:NecromythDemo>"
+    DEPENDS NecromythDemo
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     USES_TERMINAL
 )

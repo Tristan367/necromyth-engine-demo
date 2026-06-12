@@ -2,7 +2,7 @@
 
 BUILD_TYPE ?= Release
 VULKAN_SDK_ROOT ?= $(HOME)/opt/vulkan-sdk/default/x86_64
-VCE_ROOT ?= ../Vulkan-C-Engine
+VCE_ROOT ?= $(if $(wildcard ../necromyth-engine/CMakeLists.txt),../necromyth-engine,../Vulkan-C-Engine)
 
 # "make debug" or "make debug run" -> build-Debug; "make" / "make run" -> build-Release.
 ifneq (,$(filter debug,$(MAKECMDGOALS)))
@@ -10,7 +10,7 @@ ifneq (,$(filter debug,$(MAKECMDGOALS)))
 endif
 
 BUILD_DIR := build-$(BUILD_TYPE)
-APP := $(BUILD_DIR)/bin/VulkanCppApp
+APP := $(BUILD_DIR)/bin/NecromythDemo
 
 all: build
 

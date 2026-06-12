@@ -42,7 +42,7 @@ struct DemoApp::Impl {
 
   explicit Impl(engine::EngineConfig config_in)
       : config(std::move(config_in)),
-        window(config.window_title, config.window_width, config.window_height),
+        window("Necromyth Engine Demo", config.window_width, config.window_height),
         scene(create_demo_scene()),
         vulkan(window.handle(), config, scene),
         debug_ui(window.handle(), vulkan) {
