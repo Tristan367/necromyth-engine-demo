@@ -193,9 +193,12 @@ auto DebugUi::begin_frame(engine::Scene &scene, float frame_delta_seconds, bool 
       ImGui::Text("Focus: %s", to_c_string(shadow.focus_mode));
 
     ImGui::Text("Point shadow filter: %s", shadow.point_shadow_filter ? "nearest" : "linear");
+    ImGui::Text("Cascades: %s", shadow.cascade_mode == engine::ShadowCascadeMode::Dual ? "dual" : "single");
+    ImGui::TextDisabled("Restart to change (ENGINE_SHADOW_CASCADES=1|2)");
     ImGui::Checkbox("Texel snap", &shadow.texel_snapping);
-    ImGui::Checkbox("Coverage fade", &shadow.coverage_fade);
     ImGui::SliderFloat("Fade width", &shadow.coverage_fade_uv_width, 0.0F, 0.25F, "%.3f");
+    if (shadow.cascade_mode == engine::ShadowCascadeMode::Dual)
+      ImGui::SliderFloat("Split blend", &shadow.cascade_blend_range, 0.0F, 20.0F, "%.1f");
   }
   ImGui::End();
 
