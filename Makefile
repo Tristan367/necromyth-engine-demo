@@ -2,7 +2,7 @@
 
 BUILD_TYPE ?= Release
 VULKAN_SDK_ROOT ?= $(HOME)/opt/vulkan-sdk/default/x86_64
-VCE_ROOT ?= $(if $(wildcard ../necromyth-engine/CMakeLists.txt),../necromyth-engine,../Vulkan-C-Engine)
+VCE_ROOT ?= ../necromyth-engine
 
 # "make debug" or "make debug run" -> build-Debug; "make" / "make run" -> build-Release.
 ifneq (,$(filter debug,$(MAKECMDGOALS)))

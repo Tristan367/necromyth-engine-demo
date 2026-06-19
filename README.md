@@ -17,8 +17,8 @@ Requires a checkout of the engine (sibling directory or set `VCE_ROOT`):
 
 ```
 Projects/
-  necromyth-engine/       # preferred sibling checkout name
-  necromyth-engine-demo/  # this repo (legacy folder name: Vulkan-C-App)
+  necromyth-engine/
+  necromyth-engine-demo/  # this repo
 ```
 
 ## Demo scene
