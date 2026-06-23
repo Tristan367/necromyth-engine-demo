@@ -11,6 +11,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <array>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -146,6 +147,36 @@ void add_demo_sphere_instances(
       texture_cache,
       sphere_gltf,
       lifted(glm::translate(glm::mat4(1.0F), glm::vec3(1.6F, 2.4F, -2.0F)) * glm::scale(glm::mat4(1.0F), glm::vec3(0.9F))));
+}
+
+void add_animation_test_model(
+    engine::Scene &scene,
+    std::unordered_map<std::string, std::uint32_t> &texture_cache) {
+  const engine::LoadedGltfModel anim_model = engine::load_gltf_model(asset_path("/models/animationTest.glb"));
+  if (anim_model.primitives.empty() || anim_model.skeletons.empty() || anim_model.animations.empty())
+    return;
+
+  add_gltf_model_instances(scene, texture_cache, anim_model, lifted(glm::vec3(0.0F, 1.5F, 0.0F)));
+
+  const std::uint32_t skeleton_index = scene.add_skeleton(anim_model.skeletons.front());
+
+  const std::uint32_t first_animation_index =
+      static_cast<std::uint32_t>(scene.animations().size());
+  for (const engine::AnimationClip &anim : anim_model.animations)
+    (void)scene.add_animation(anim);
+
+  const std::uint32_t first_instance =
+      static_cast<std::uint32_t>(scene.instances().size() - anim_model.primitives.size());
+  for (std::size_t i = 0; i < anim_model.primitives.size(); ++i) {
+    scene.instance(first_instance + static_cast<std::uint32_t>(i)).skin_index = skeleton_index;
+    scene.instance(first_instance + static_cast<std::uint32_t>(i)).animation_index = first_animation_index;
+  }
+
+  std::cout << "Loaded animation model with " << anim_model.animations.size()
+            << " animations (" << anim_model.skeletons.front().joint_nodes.size() << " bones):";
+  for (const engine::AnimationClip &anim : anim_model.animations)
+    std::cout << ' ' << anim.name;
+  std::cout << '\n';
 }
 
 } // namespace app

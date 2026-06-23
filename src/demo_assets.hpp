@@ -50,4 +50,8 @@ void add_demo_sphere_instances(
     engine::Scene &scene,
     std::unordered_map<std::string, std::uint32_t> &texture_cache);
 
+void add_animation_test_model(
+    engine::Scene &scene,
+    std::unordered_map<std::string, std::uint32_t> &texture_cache);
+
 } // namespace app

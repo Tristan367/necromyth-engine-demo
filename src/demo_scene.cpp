@@ -13,6 +13,7 @@
 
 #include <array>
 #include <cmath>
+#include <iostream>
 #include <numbers>
 #include <unordered_map>
 
@@ -206,6 +207,8 @@ void populate_demo_scene(engine::Scene &scene) {
       .alpha_mode = engine::MeshAlphaMode::AlphaToCoverage,
   });
 
+  add_animation_test_model(scene, texture_cache);
+
   (void)texture_cache;
   (void)alpha_test_texture;
 }
@@ -218,6 +221,19 @@ auto create_demo_scene() -> engine::Scene {
 
 void update_demo_scene(engine::Scene &scene) {
   update_demo_animations(scene);
+}
+
+void toggle_demo_animation(engine::Scene &scene) {
+  for (engine::MeshInstance &instance : scene.instances()) {
+    if (instance.skin_index == engine::k_invalid_skin_index)
+      continue;
+    const std::uint32_t anim_count = static_cast<std::uint32_t>(scene.animations().size());
+    const std::uint32_t next = (instance.animation_index + 1) % anim_count;
+    instance.next_animation_index = next;
+    instance.next_animation_time = 0.0F;
+    instance.blend_factor = 0.0F;
+    std::cout << "Crossfading to: " << scene.animations()[next].name << '\n';
+  }
 }
 
 } // namespace app
