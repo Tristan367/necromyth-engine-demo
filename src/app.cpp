@@ -2,6 +2,7 @@
 
 #include "debug_ui.hpp"
 #include "demo_scene.hpp"
+#include "demo_server.hpp"
 #include "fly_camera.hpp"
 #include "input_router.hpp"
 
@@ -34,6 +35,7 @@ struct DemoApp::Impl {
   engine::SdlWindow window;
   engine::Scene scene;
   engine::VulkanContext vulkan;
+  DemoServer server;
   DebugUi debug_ui;
   FlyCameraController fly_camera;
   InputRouter input;
@@ -45,6 +47,7 @@ struct DemoApp::Impl {
         window("Necromyth Engine Demo", config.window_width, config.window_height),
         scene(create_demo_scene()),
         vulkan(window.handle(), config, scene),
+        server(scene),
         debug_ui(window.handle(), vulkan) {
     std::signal(SIGINT, on_quit_signal);
     std::signal(SIGTERM, on_quit_signal);
@@ -116,6 +119,7 @@ void DemoApp::run() {
     if (ui.resume_requested)
       impl.fly_camera.set_capture(true);
 
+    impl.server.update();
     impl.vulkan.draw_frame(impl.scene);
   }
 
