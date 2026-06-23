@@ -1,26 +1,66 @@
 #pragma once
 
-#include "renderer/scene_gpu.hpp"
 #include "scene/animation_utils.hpp"
 #include "scene/scene.hpp"
 
 #include <SDL3/SDL_timer.h>
 
+#include <atomic>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <iostream>
+#include <mutex>
+#include <thread>
 
 class DemoServer {
 public:
-  explicit DemoServer(engine::Scene &scene) : scene_{scene} {}
+  explicit DemoServer(engine::Scene &scene, int tick_rate = 60)
+      : scene_{scene}, tick_rate_{tick_rate} {}
 
-  void update() {
-    const std::uint64_t now = SDL_GetTicks();
-    const float delta = last_ticks_ > 0
-        ? static_cast<float>(now - last_ticks_) / 1000.0F
-        : 0.0F;
-    last_ticks_ = now;
+  ~DemoServer() { stop(); }
 
+  void start() {
+    if (running_)
+      return;
+    running_ = true;
+    std::cout << "Localhost server started (" << tick_rate_ << " Hz tick rate)\n";
+    thread_ = std::thread(&DemoServer::loop, this);
+  }
+
+  void stop() {
+    if (!running_)
+      return;
+    running_ = false;
+    if (thread_.joinable())
+      thread_.join();
+    std::cout << "Localhost server stopped\n";
+  }
+
+  [[nodiscard]] auto scene_mutex() -> std::mutex & { return scene_mutex_; }
+
+private:
+  void loop() {
+    std::uint64_t last_tick = SDL_GetTicks();
+    const std::uint64_t tick_interval_ms = 1000 / static_cast<std::uint64_t>(tick_rate_);
+
+    while (running_) {
+      const std::uint64_t now = SDL_GetTicks();
+      const float delta = static_cast<float>(now - last_tick) / 1000.0F;
+      last_tick = now;
+
+      {
+        std::lock_guard lock(scene_mutex_);
+        tick(delta);
+      }
+
+      const std::uint64_t elapsed = SDL_GetTicks() - now;
+      if (elapsed < tick_interval_ms)
+        SDL_Delay(static_cast<std::uint32_t>(tick_interval_ms - elapsed));
+    }
+  }
+
+  void tick(float delta) {
     for (engine::MeshInstance &instance : scene_.instances()) {
       if (instance.skin_index == engine::k_invalid_skin_index)
         continue;
@@ -50,7 +90,9 @@ public:
     }
   }
 
-private:
   engine::Scene &scene_;
-  std::uint64_t last_ticks_{};
+  std::thread thread_;
+  std::atomic<bool> running_{false};
+  std::mutex scene_mutex_;
+  int tick_rate_;
 };

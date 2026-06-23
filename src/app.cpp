@@ -15,6 +15,7 @@
 
 #include <csignal>
 #include <iostream>
+#include <mutex>
 #include <utility>
 
 namespace app {
@@ -64,9 +65,12 @@ struct DemoApp::Impl {
       std::cout << " (requested index " << *config.gpu_device_index << ')';
     std::cout << "\nEsc: menu / resume fly mode. WASD move, Space/C vertical, Shift sprint.\n";
     std::cout << "Menu: Resume or Quit. Debug panel: shadow toggles, FPS.\n";
+
+    server.start();
   }
 
   ~Impl() {
+    server.stop();
     fly_camera.release_capture();
   }
 };
@@ -92,8 +96,10 @@ void DemoApp::run() {
       impl.input.process_event(event, impl.debug_ui, impl.fly_camera);
 
       if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_E &&
-          !impl.debug_ui.wants_keyboard())
+          !impl.debug_ui.wants_keyboard()) {
+        std::lock_guard lock(impl.server.scene_mutex());
         toggle_demo_animation(impl.scene);
+      }
 
       if (event.type == SDL_EVENT_WINDOW_RESIZED ||
           event.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED)
@@ -111,7 +117,11 @@ void DemoApp::run() {
     if (impl.input.should_update_camera(impl.debug_ui, impl.fly_camera))
       impl.fly_camera.update(impl.scene.camera(), delta_seconds);
 
-    update_demo_scene(impl.scene);
+    {
+      std::lock_guard lock(impl.server.scene_mutex());
+      update_demo_scene(impl.scene);
+    }
+
     const UiFrameResult ui = impl.debug_ui.begin_frame(impl.scene, delta_seconds, menu_open);
 
     if (ui.quit_requested)
@@ -119,8 +129,10 @@ void DemoApp::run() {
     if (ui.resume_requested)
       impl.fly_camera.set_capture(true);
 
-    impl.server.update();
-    impl.vulkan.draw_frame(impl.scene);
+    {
+      std::lock_guard lock(impl.server.scene_mutex());
+      impl.vulkan.draw_frame(impl.scene);
+    }
   }
 
   impl.vulkan.shutdown();
