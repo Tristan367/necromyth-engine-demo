@@ -109,7 +109,6 @@ void DemoApp::run() {
       if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_TAB &&
           !impl.debug_ui.wants_keyboard()) {
         impl.character_mode = !impl.character_mode;
-        impl.fly_camera.set_capture(!impl.character_mode);
         std::cout << (impl.character_mode ? "Character mode\n" : "Fly mode\n");
       }
 
@@ -142,22 +141,17 @@ void DemoApp::run() {
         move = glm::normalize(move);
 
       const float speed = 5.0F;
-      glm::vec3 forward = impl.scene.camera().look_direction();
-      forward.y = 0.0F;
-      if (glm::length(forward) < 0.01F)
-        forward = glm::vec3(0.0F, 0.0F, -1.0F);
-      forward = glm::normalize(forward);
-
-      const glm::vec3 world_up(0.0F, 1.0F, 0.0F);
-      const glm::vec3 right = glm::normalize(glm::cross(world_up, forward));
-      const glm::vec3 world_vel = (forward * -move.z + right * move.x) * speed;
+      const glm::vec3 forward = impl.fly_camera.forward();
+      const glm::vec3 flat_forward = glm::normalize(glm::vec3(forward.x, 0.0F, forward.z));
+      const glm::vec3 right = glm::normalize(glm::cross(flat_forward, glm::vec3(0.0F, 1.0F, 0.0F)));
+      const glm::vec3 world_vel = (flat_forward * -move.z + right * move.x) * speed;
 
       impl.server.set_character_velocity(world_vel);
     }
 
     if (impl.character_mode) {
       const glm::vec3 char_pos = impl.server.character_position();
-      const glm::vec3 look_dir = impl.scene.camera().look_direction();
+      const glm::vec3 look_dir = impl.fly_camera.forward();
       const float eye_height = 1.5F;
       impl.scene.camera().look_at(
           glm::vec3(char_pos.x, char_pos.y + eye_height, char_pos.z),

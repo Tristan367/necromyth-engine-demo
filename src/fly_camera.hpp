@@ -61,6 +61,10 @@ public:
     yaw_ = std::atan2(forward.z, forward.x);
   }
 
+  [[nodiscard]] auto forward() const -> glm::vec3 {
+    return orientation_forward();
+  }
+
   void handle_event(const SDL_Event &event) {
     if (event.type == SDL_EVENT_WINDOW_FOCUS_LOST)
       release_capture();

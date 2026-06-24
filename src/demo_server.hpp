@@ -28,7 +28,9 @@ public:
       const glm::vec3 pos{inst.model[3]};
       const JPH::BodyID body_id = physics_.create_box({0.5F, 0.5F, 0.5F}, pos,
                                                        JPH::EMotionType::Dynamic,
-                                                       engine::physics::Layers::kMoving);
+                                                       engine::physics::Layers::kMoving,
+                                                       glm::quat(1.0F, 0.0F, 0.0F, 0.0F),
+                                                       1.0F);
       physics_bodies_.push_back({body_id, inst_idx});
     }
 
