@@ -34,7 +34,8 @@ public:
       physics_bodies_.push_back({body_id, inst_idx});
     }
 
-    character_ = std::make_unique<engine::physics::Character>(physics_, glm::vec3{0.0F, 5.0F, 0.0F});
+    character_ = std::make_unique<engine::physics::Character>(physics_, glm::vec3{0.0F, 5.0F, 0.0F},
+                                                                0.35F, 0.8F);
 
     std::cout << "Physics: " << physics_bodies_.size() << " cubes, ground plane\nCharacter at y=5\n";
   }
@@ -62,8 +63,11 @@ public:
 
   void set_character_velocity(const glm::vec3 &velocity) {
     char_velocity_[0] = velocity.x;
-    char_velocity_[1] = velocity.y;
     char_velocity_[2] = velocity.z;
+  }
+
+  void trigger_jump() {
+    jump_requested_ = true;
   }
 
   [[nodiscard]] auto character_position() const -> glm::vec3 {
@@ -122,8 +126,12 @@ private:
 
     physics_.step(delta);
 
+    float vy = character_->y_velocity();
+    if (jump_requested_.exchange(false))
+      vy = 5.0F;
+
     character_->set_velocity(
-        glm::vec3{char_velocity_[0].exchange(0.0F), char_velocity_[1].exchange(0.0F), char_velocity_[2].exchange(0.0F)});
+        glm::vec3{char_velocity_[0].exchange(0.0F), vy, char_velocity_[2].exchange(0.0F)});
     character_->update(delta);
 
     const glm::vec3 char_pos = character_->position();
@@ -152,5 +160,6 @@ private:
   std::uint32_t character_instance_{};
   std::atomic<float> char_velocity_[3]{{0.0F}, {0.0F}, {0.0F}};
   std::atomic<float> char_position_[3]{{0.0F}, {5.0F}, {0.0F}};
+  std::atomic<bool> jump_requested_{false};
   std::vector<PhysicsEntry> physics_bodies_;
 };

@@ -136,6 +136,7 @@ void DemoApp::run() {
       if (keys[SDL_SCANCODE_S]) move.z += 1.0F;
       if (keys[SDL_SCANCODE_A]) move.x -= 1.0F;
       if (keys[SDL_SCANCODE_D]) move.x += 1.0F;
+      if (keys[SDL_SCANCODE_SPACE]) impl.server.trigger_jump();
 
       if (move.x != 0.0F || move.z != 0.0F)
         move = glm::normalize(move);
