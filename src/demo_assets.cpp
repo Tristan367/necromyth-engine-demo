@@ -179,4 +179,26 @@ void add_animation_test_model(
   std::cout << '\n';
 }
 
+bool load_trimesh_test_model(engine::LoadedGltfModel &out_model) {
+  const std::string path = asset_path("/models/trimeshTest.glb");
+  try {
+    out_model = engine::load_gltf_model(path);
+    return !out_model.primitives.empty();
+  } catch (const std::exception &) {
+    return false;
+  }
+}
+
+TrimeshTestData load_trimesh_test_data() {
+  engine::LoadedGltfModel model;
+  if (!load_trimesh_test_model(model) || model.primitives.empty())
+    return {};
+  TrimeshTestData result;
+  result.mesh.vertices = model.primitives.front().mesh.vertices;
+  result.mesh.indices = model.primitives.front().mesh.indices;
+  if (model.primitives.front().material.base_color_texture_path)
+    result.texture_path = *model.primitives.front().material.base_color_texture_path;
+  return result;
+}
+
 } // namespace app

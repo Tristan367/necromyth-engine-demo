@@ -1,5 +1,7 @@
 #pragma once
 
+#include "scene/mesh_source.hpp"
+
 #include <glm/mat4x4.hpp>
 
 #include <cstdint>
@@ -53,5 +55,12 @@ void add_demo_sphere_instances(
 void add_animation_test_model(
     engine::Scene &scene,
     std::unordered_map<std::string, std::uint32_t> &texture_cache);
+
+struct TrimeshTestData {
+  engine::MeshSource mesh;
+  std::string texture_path;
+};
+
+[[nodiscard]] auto load_trimesh_test_data() -> TrimeshTestData;
 
 } // namespace app

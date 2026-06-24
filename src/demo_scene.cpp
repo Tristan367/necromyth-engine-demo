@@ -17,6 +17,7 @@
 #include <numbers>
 #include <unordered_map>
 
+
 namespace app {
 
 namespace {
@@ -33,6 +34,8 @@ constexpr auto tile_array_layers = std::array{
 } // namespace
 
 static std::vector<std::uint32_t> cube_instance_indices;
+static std::uint32_t character_sphere_index;
+static engine::MeshSource trimesh_mesh;
 
 static void add_physics_cube_instances(engine::Scene &scene, std::vector<std::uint32_t> &out_indices);
 
@@ -217,16 +220,57 @@ void populate_demo_scene(engine::Scene &scene) {
   add_physics_cube_instances(scene, physics_instances);
   cube_instance_indices = physics_instances;
 
+  // Character visual (box that will follow character position)
+  {
+    const engine::MeshSource vis_mesh = app::make_cube_mesh(0.3F);
+    const std::uint32_t vis_mesh_idx = scene.add_mesh(vis_mesh);
+    character_sphere_index = scene.add_instance({
+        .mesh_index = vis_mesh_idx,
+        .texture_index = 0,
+        .model = glm::mat4(1.0F),
+        .layer = engine::RenderLayer::Opaque,
+    });
+  }
+
+  // Load trimesh test terrain
+  {
+    const TrimeshTestData trimesh = load_trimesh_test_data();
+    if (!trimesh.mesh.vertices.empty()) {
+      trimesh_mesh = trimesh.mesh;
+      const std::uint32_t mesh_idx = scene.add_mesh(trimesh_mesh);
+      std::uint32_t tex_idx = 0;
+      if (!trimesh.texture_path.empty())
+        tex_idx = scene.add_texture(trimesh.texture_path);
+      (void)scene.add_instance({
+          .mesh_index = mesh_idx,
+          .texture_index = tex_idx,
+          .model = glm::mat4(1.0F),
+          .layer = engine::RenderLayer::Opaque,
+      });
+      std::cout << "Loaded trimesh terrain: "
+                << trimesh.mesh.vertices.size() << " verts\n";
+    }
+  }
+
   (void)texture_cache;
   (void)alpha_test_texture;
 }
 
-auto create_demo_scene(std::vector<std::uint32_t> *out_physics_indices) -> engine::Scene {
+auto create_demo_scene(
+    std::vector<std::uint32_t> *out_cube_indices,
+    std::uint32_t *out_char_instance,
+    engine::MeshSource *out_trimesh_mesh) -> engine::Scene {
   engine::Scene scene;
   populate_demo_scene(scene);
-  if (out_physics_indices)
-    *out_physics_indices = cube_instance_indices;
+  if (out_cube_indices)
+    *out_cube_indices = std::move(cube_instance_indices);
+  if (out_char_instance)
+    *out_char_instance = character_sphere_index;
+  if (out_trimesh_mesh)
+    *out_trimesh_mesh = std::move(trimesh_mesh);
   cube_instance_indices.clear();
+  character_sphere_index = 0;
+  trimesh_mesh = {};
   return scene;
 }
 
@@ -261,8 +305,9 @@ void add_physics_cube_instances(engine::Scene &scene, std::vector<std::uint32_t>
         .texture_index = 0,
         .model = glm::translate(glm::mat4(1.0F), pos),
         .layer = engine::RenderLayer::Opaque,
-    }));
+      }));
   }
 }
 
 } // namespace app
+

@@ -16,13 +16,14 @@
 
 class DemoServer {
 public:
-  explicit DemoServer(engine::Scene &scene, const std::vector<std::uint32_t> &physics_instances,
-                      int tick_rate = 60)
-      : scene_{scene}, tick_rate_{tick_rate}, physics_(1024) {
+  explicit DemoServer(engine::Scene &scene, const std::vector<std::uint32_t> &cube_instances,
+                      std::uint32_t character_instance, const engine::MeshSource *trimesh_source, int tick_rate = 60)
+      : scene_{scene}, tick_rate_{tick_rate}, physics_(65536),
+        character_instance_{character_instance} {
     (void)physics_.create_box({20.0F, 0.5F, 20.0F}, {0.0F, -0.5F, 0.0F},
                         JPH::EMotionType::Static, engine::physics::Layers::kNonMoving);
 
-    for (std::uint32_t inst_idx : physics_instances) {
+    for (std::uint32_t inst_idx : cube_instances) {
       const engine::MeshInstance &inst = scene_.instances()[inst_idx];
       const glm::vec3 pos{inst.model[3]};
       const JPH::BodyID body_id = physics_.create_box({0.5F, 0.5F, 0.5F}, pos,
@@ -31,11 +32,15 @@ public:
       physics_bodies_.push_back({body_id, inst_idx});
     }
 
-    character_ = std::make_unique<engine::physics::Character>(physics_, glm::vec3{0.0F, 2.0F, 3.0F});
+    if (trimesh_source && !trimesh_source->vertices.empty())
+      (void)physics_.create_static_mesh(*trimesh_source, glm::vec3(0.0F));
 
-    if (!physics_bodies_.empty())
-      std::cout << "Physics: " << physics_bodies_.size()
-                << " dynamic cubes, 1 ground plane\n";
+    character_ = std::make_unique<engine::physics::Character>(physics_, glm::vec3{0.0F, 20.0F, 3.0F});
+
+    std::cout << "Physics: " << physics_bodies_.size() << " cubes, 1 ground plane";
+    if (trimesh_source && !trimesh_source->vertices.empty())
+      std::cout << ", trimesh terrain";
+    std::cout << "\nCharacter at y=20\n";
   }
 
   ~DemoServer() { stop(); }
@@ -112,6 +117,10 @@ private:
     physics_.step(delta);
     character_->update(delta);
 
+    const glm::vec3 char_pos = character_->position();
+    scene_.instance(character_instance_).model =
+        glm::translate(glm::mat4(1.0F), char_pos);
+
     for (const auto &pb : physics_bodies_)
       physics_.sync_body_to_instance(pb.body_id, scene_.instance(pb.instance_index));
   }
@@ -128,5 +137,6 @@ private:
   int tick_rate_;
   engine::physics::PhysicsWorld physics_;
   std::unique_ptr<engine::physics::Character> character_;
+  std::uint32_t character_instance_{};
   std::vector<PhysicsEntry> physics_bodies_;
 };
