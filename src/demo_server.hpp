@@ -45,8 +45,8 @@ public:
 
 private:
   void setup_physics_test() {
-    // Ground plane (static, no mesh — invisible collision)
-    physics_.create_static_box({10.0F, 0.5F, 10.0F}, {0.0F, -1.0F, 0.0F});
+    // Ground plane matching rendering floor (20x20 quad at y=0)
+    physics_.create_static_box({20.0F, 0.5F, 20.0F}, {0.0F, -0.5F, 0.0F});
 
     const float half = 0.5F;
     const std::array<glm::vec3, 3> positions = {
@@ -97,13 +97,13 @@ private:
       mesh.indices.push_back(base + 0); mesh.indices.push_back(base + 2); mesh.indices.push_back(base + 3);
     };
 
-    // +Y, -Y, +X, -X, +Z, -Z
+    // +Y (top, CCW), -Y (bottom, CW reversed), +X (right, CCW), -X (left, CCW), +Z (front CW reversed), -Z (back CW reversed)
     face(0,  0, 1, 0,  -1, 1,  1,   1, 1,  1,   1, 1, -1,  -1, 1, -1);
-    face(4,  0,-1, 0,  -1,-1, -1,  -1,-1,  1,   1,-1,  1,   1,-1, -1);
+    face(4,  0,-1, 0,  -1,-1,  1,   1,-1,  1,   1,-1, -1,  -1,-1, -1);
     face(8,  1, 0, 0,   1,-1,  1,   1,-1, -1,   1, 1, -1,   1, 1,  1);
-    face(12,-1, 0, 0,  -1,-1, -1,  -1,-1,  1,  -1, 1,  1,  -1, 1, -1);
-    face(16, 0, 0, 1,  -1,-1,  1,  -1, 1,  1,   1, 1,  1,   1,-1,  1);
-    face(20, 0, 0,-1,   1,-1, -1,   1, 1, -1,  -1, 1, -1,  -1,-1, -1);
+    face(12,-1, 0, 0,  -1,-1, -1,  -1, 1, -1,  -1, 1,  1,  -1,-1,  1);
+    face(16, 0, 0, 1,  -1, 1,  1,  -1,-1,  1,   1,-1,  1,   1, 1,  1);
+    face(20, 0, 0,-1,   1, 1, -1,   1,-1, -1,  -1,-1, -1,  -1, 1, -1);
 
     return mesh;
   }

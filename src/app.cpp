@@ -67,6 +67,7 @@ struct DemoApp::Impl {
     std::cout << "Menu: Resume or Quit. Debug panel: shadow toggles, FPS.\n";
 
     server.start();
+    vulkan.sync_scene(scene);
   }
 
   ~Impl() {
@@ -131,7 +132,6 @@ void DemoApp::run() {
 
     {
       std::lock_guard lock(impl.server.scene_mutex());
-      impl.vulkan.sync_scene(impl.scene);
       impl.vulkan.draw_frame(impl.scene);
     }
   }
