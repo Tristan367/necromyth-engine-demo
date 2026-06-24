@@ -8,7 +8,6 @@
 
 #include <atomic>
 #include <cmath>
-#include <cstddef>
 #include <cstdint>
 #include <iostream>
 #include <mutex>
@@ -20,12 +19,15 @@ public:
   explicit DemoServer(engine::Scene &scene, const std::vector<std::uint32_t> &physics_instances,
                       int tick_rate = 60)
       : scene_{scene}, tick_rate_{tick_rate}, physics_(1024) {
-    (void)physics_.create_static_box({20.0F, 0.5F, 20.0F}, {0.0F, -0.5F, 0.0F});
+    physics_.create_box({20.0F, 0.5F, 20.0F}, {0.0F, -0.5F, 0.0F},
+                        JPH::EMotionType::Static, engine::physics::Layers::kNonMoving);
 
     for (std::uint32_t inst_idx : physics_instances) {
       const engine::MeshInstance &inst = scene_.instances()[inst_idx];
       const glm::vec3 pos{inst.model[3]};
-      const JPH::BodyID body_id = physics_.create_dynamic_box({0.5F, 0.5F, 0.5F}, pos);
+      const JPH::BodyID body_id = physics_.create_box({0.5F, 0.5F, 0.5F}, pos,
+                                                       JPH::EMotionType::Dynamic,
+                                                       engine::physics::Layers::kMoving);
       physics_bodies_.push_back({body_id, inst_idx});
     }
 
