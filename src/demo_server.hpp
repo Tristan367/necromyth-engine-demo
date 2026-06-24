@@ -18,26 +18,24 @@ class DemoServer {
 public:
   explicit DemoServer(engine::Scene &scene, const std::vector<std::uint32_t> &cube_instances,
                       std::uint32_t character_instance, int tick_rate = 60)
-      : scene_{scene}, tick_rate_{tick_rate}, physics_(65536),
-        character_instance_{character_instance} {
+      : scene_{scene}, physics_(65536), character_instance_{character_instance} {
     (void)physics_.create_box({25.0F, 0.2F, 25.0F}, {0.0F, -0.2F, 0.0F},
                         JPH::EMotionType::Static, engine::physics::Layers::kNonMoving);
 
     for (std::uint32_t inst_idx : cube_instances) {
       const engine::MeshInstance &inst = scene_.instances()[inst_idx];
       const glm::vec3 pos{inst.model[3]};
-      const JPH::BodyID body_id = physics_.create_box({0.5F, 0.5F, 0.5F}, pos,
-                                                       JPH::EMotionType::Dynamic,
-                                                       engine::physics::Layers::kMoving,
-                                                       glm::quat(1.0F, 0.0F, 0.0F, 0.0F),
-                                                       1.0F);
-      physics_bodies_.push_back({body_id, inst_idx});
+      physics_bodies_.push_back({
+          physics_.create_box({0.5F, 0.5F, 0.5F}, pos,
+                              JPH::EMotionType::Dynamic, engine::physics::Layers::kMoving,
+                              glm::quat(1.0F, 0.0F, 0.0F, 0.0F), 1.0F),
+          inst_idx});
     }
 
     character_ = std::make_unique<engine::physics::Character>(physics_, glm::vec3{0.0F, 5.0F, 0.0F},
                                                                 0.5F, 0.8F);
 
-    std::cout << "Physics: " << physics_bodies_.size() << " cubes, ground plane\nCharacter at y=5\n";
+    std::cout << "Physics: " << physics_bodies_.size() << " cubes, ground plane\n";
   }
 
   ~DemoServer() { stop(); }
@@ -46,7 +44,7 @@ public:
     if (running_)
       return;
     running_ = true;
-    std::cout << "Localhost server started (" << tick_rate_ << " Hz tick rate)\n";
+    std::cout << "Localhost server started\n";
     thread_ = std::thread(&DemoServer::loop, this);
   }
 
@@ -56,22 +54,16 @@ public:
     running_ = false;
     if (thread_.joinable())
       thread_.join();
-    std::cout << "Localhost server stopped\n";
   }
 
   [[nodiscard]] auto scene_mutex() -> std::mutex & { return scene_mutex_; }
 
-  void set_character_velocity(const glm::vec3 &velocity) {
-    char_velocity_[0] = velocity.x;
-    char_velocity_[2] = velocity.z;
-  }
-
-  void trigger_jump() {
-    jump_requested_ = true;
-  }
-
-  [[nodiscard]] auto character_position() const -> glm::vec3 {
-    return {char_position_[0].load(), char_position_[1].load(), char_position_[2].load()};
+  // Called from main thread — sets horizontal velocity and jump flag.
+  // The server tick reads these atomically and zeroes them.
+  void set_input(float forward, float right, bool jump) {
+    input_forward_ = forward;
+    input_right_ = right;
+    input_jump_ = jump;
   }
 
 private:
@@ -105,6 +97,7 @@ private:
   }
 
   void tick(float delta) {
+    // Animation update
     for (engine::MeshInstance &instance : scene_.instances()) {
       if (instance.skin_index == engine::k_invalid_skin_index)
         continue;
@@ -135,20 +128,23 @@ private:
 
     physics_.step(delta);
 
-    float vy = character_->y_velocity();
-    if (jump_requested_.exchange(false))
-      vy = 5.0F;
+    // Read current velocity (preserves gravity accumulation from Update)
+    glm::vec3 vel = character_->linear_velocity();
 
-    character_->set_velocity(
-        glm::vec3{char_velocity_[0].exchange(0.0F), vy, char_velocity_[2].exchange(0.0F)});
+    // Horizontal: apply input with instant stop when released
+    vel.x = input_forward_ * 5.0F;
+    vel.z = input_right_ * 5.0F;
+
+    // Jump overrides vertical
+    if (input_jump_)
+      vel.y = 5.0F;
+
+    character_->set_velocity(vel);
     character_->update(delta);
 
+    // Sync visual
     const glm::vec3 char_pos = character_->position();
     scene_.instance(character_instance_).model = glm::translate(glm::mat4(1.0F), char_pos);
-
-    char_position_[0] = char_pos.x;
-    char_position_[1] = char_pos.y;
-    char_position_[2] = char_pos.z;
 
     for (const auto &pb : physics_bodies_)
       physics_.sync_body_to_instance(pb.body_id, scene_.instance(pb.instance_index));
@@ -163,12 +159,11 @@ private:
   std::thread thread_;
   std::atomic<bool> running_{false};
   std::mutex scene_mutex_;
-  int tick_rate_;
   engine::physics::PhysicsWorld physics_;
   std::unique_ptr<engine::physics::Character> character_;
   std::uint32_t character_instance_{};
-  std::atomic<float> char_velocity_[3]{{0.0F}, {0.0F}, {0.0F}};
-  std::atomic<float> char_position_[3]{{0.0F}, {5.0F}, {0.0F}};
-  std::atomic<bool> jump_requested_{false};
+  std::atomic<float> input_forward_{0.0F};
+  std::atomic<float> input_right_{0.0F};
+  std::atomic<bool> input_jump_{false};
   std::vector<PhysicsEntry> physics_bodies_;
 };

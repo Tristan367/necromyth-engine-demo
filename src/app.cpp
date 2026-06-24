@@ -130,33 +130,35 @@ void DemoApp::run() {
 
     if (impl.character_mode && !menu_open) {
       const bool *keys = SDL_GetKeyboardState(nullptr);
-      glm::vec3 move{0.0F};
+      float input_fwd = 0.0F;
+      float input_rgt = 0.0F;
+      bool jump = false;
 
-      if (keys[SDL_SCANCODE_W]) move.z -= 1.0F;
-      if (keys[SDL_SCANCODE_S]) move.z += 1.0F;
-      if (keys[SDL_SCANCODE_A]) move.x -= 1.0F;
-      if (keys[SDL_SCANCODE_D]) move.x += 1.0F;
-      if (keys[SDL_SCANCODE_SPACE]) impl.server.trigger_jump();
+      if (keys[SDL_SCANCODE_W]) input_fwd += 1.0F;
+      if (keys[SDL_SCANCODE_S]) input_fwd -= 1.0F;
+      if (keys[SDL_SCANCODE_D]) input_rgt += 1.0F;
+      if (keys[SDL_SCANCODE_A]) input_rgt -= 1.0F;
+      if (keys[SDL_SCANCODE_SPACE]) jump = true;
 
-      if (move.x != 0.0F || move.z != 0.0F)
-        move = glm::normalize(move);
+      // Normalize input so diagonal isn't faster
+      float mag = std::sqrt(input_fwd * input_fwd + input_rgt * input_rgt);
+      if (mag > 1.0F) { input_fwd /= mag; input_rgt /= mag; }
 
-      const float speed = 5.0F;
-      const glm::vec3 forward = impl.fly_camera.forward();
-      const glm::vec3 flat_forward = glm::normalize(glm::vec3(forward.x, 0.0F, forward.z));
-      const glm::vec3 right = glm::normalize(glm::cross(flat_forward, glm::vec3(0.0F, 1.0F, 0.0F)));
-      const glm::vec3 world_vel = (flat_forward * -move.z + right * move.x) * speed;
+      // Convert local input to world-space velocity via camera forward
+      const glm::vec3 look = impl.fly_camera.forward();
+      const glm::vec3 fwd = glm::normalize(glm::vec3(look.x, 0.0F, look.z));
+      const glm::vec3 rgt = glm::normalize(glm::cross(fwd, glm::vec3(0.0F, 1.0F, 0.0F)));
+      const glm::vec3 world_vel = fwd * input_fwd + rgt * input_rgt;
 
-      impl.server.set_character_velocity(world_vel);
+      impl.server.set_input(world_vel.x, world_vel.z, jump);
     }
 
     if (impl.character_mode) {
-      const glm::vec3 char_pos = impl.server.character_position();
-      const glm::vec3 look_dir = impl.fly_camera.forward();
-      const float eye_height = 1.5F;
+      const glm::vec3 look_fwd = impl.fly_camera.forward();
+      const glm::vec3 char_pos = impl.scene.instances()[impl.char_instance_].model[3];
       impl.scene.camera().look_at(
-          glm::vec3(char_pos.x, char_pos.y + eye_height, char_pos.z),
-          glm::vec3(char_pos.x, char_pos.y + eye_height, char_pos.z) + look_dir);
+          glm::vec3(char_pos.x, char_pos.y + 1.5F, char_pos.z),
+          glm::vec3(char_pos.x, char_pos.y + 1.5F, char_pos.z) + look_fwd);
     }
 
     {
