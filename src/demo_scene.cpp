@@ -294,9 +294,9 @@ void toggle_demo_animation(engine::Scene &scene) {
 void add_physics_cube_instances(engine::Scene &scene, std::vector<std::uint32_t> &out_indices) {
   const engine::MeshSource cube_mesh = app::make_cube_mesh(0.5F);
   const std::array positions{
-      glm::vec3{0.0F, 2.0F, 0.0F},
-      glm::vec3{0.5F, 4.0F, 0.3F},
-      glm::vec3{-0.4F, 6.0F, -0.2F},
+      glm::vec3{0.0F, 8.0F, 0.0F},
+      glm::vec3{2.0F, 12.0F, 2.0F},
+      glm::vec3{-2.0F, 16.0F, -2.0F},
   };
   for (const glm::vec3 &pos : positions) {
     const std::uint32_t mesh_idx = scene.add_mesh(cube_mesh);

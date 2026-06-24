@@ -11,6 +11,7 @@
 #include "scene/scene.hpp"
 
 #include <SDL3/SDL_events.h>
+#include <SDL3/SDL_keyboard.h>
 #include <SDL3/SDL_timer.h>
 
 #include <csignal>
@@ -46,6 +47,7 @@ struct DemoApp::Impl {
   InputRouter input;
   std::uint64_t last_frame_counter{};
   bool running{true};
+  bool character_mode{false};
 
   explicit Impl(engine::EngineConfig config_in)
       : config(std::move(config_in)),
@@ -105,6 +107,13 @@ void DemoApp::run() {
         toggle_demo_animation(impl.scene);
       }
 
+      if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_TAB &&
+          !impl.debug_ui.wants_keyboard()) {
+        impl.character_mode = !impl.character_mode;
+        impl.fly_camera.set_capture(!impl.character_mode);
+        std::cout << (impl.character_mode ? "Character mode\n" : "Fly mode\n");
+      }
+
       if (event.type == SDL_EVENT_WINDOW_RESIZED ||
           event.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED)
         impl.vulkan.mark_framebuffer_resized();
@@ -118,8 +127,34 @@ void DemoApp::run() {
 
     const bool menu_open = !impl.fly_camera.capture_active();
 
-    if (impl.input.should_update_camera(impl.debug_ui, impl.fly_camera))
+    if (!impl.character_mode && impl.input.should_update_camera(impl.debug_ui, impl.fly_camera))
       impl.fly_camera.update(impl.scene.camera(), delta_seconds);
+
+    if (impl.character_mode && !menu_open) {
+      const bool *keys = SDL_GetKeyboardState(nullptr);
+      glm::vec3 move{0.0F};
+
+      if (keys[SDL_SCANCODE_W]) move.z -= 1.0F;
+      if (keys[SDL_SCANCODE_S]) move.z += 1.0F;
+      if (keys[SDL_SCANCODE_A]) move.x -= 1.0F;
+      if (keys[SDL_SCANCODE_D]) move.x += 1.0F;
+
+      if (move.x != 0.0F || move.z != 0.0F)
+        move = glm::normalize(move);
+
+      const float speed = 5.0F;
+      glm::vec3 forward = impl.scene.camera().look_direction();
+      forward.y = 0.0F;
+      if (glm::length(forward) < 0.01F)
+        forward = glm::vec3(0.0F, 0.0F, -1.0F);
+      forward = glm::normalize(forward);
+
+      const glm::vec3 world_up(0.0F, 1.0F, 0.0F);
+      const glm::vec3 right = glm::normalize(glm::cross(world_up, forward));
+      const glm::vec3 world_vel = (forward * -move.z + right * move.x) * speed;
+
+      impl.server.set_character_velocity(world_vel);
+    }
 
     {
       std::lock_guard lock(impl.server.scene_mutex());

@@ -20,8 +20,8 @@ public:
                       std::uint32_t character_instance, const engine::MeshSource *trimesh_source, int tick_rate = 60)
       : scene_{scene}, tick_rate_{tick_rate}, physics_(65536),
         character_instance_{character_instance} {
-    (void)physics_.create_box({20.0F, 0.5F, 20.0F}, {0.0F, -0.5F, 0.0F},
-                        JPH::EMotionType::Static, engine::physics::Layers::kNonMoving);
+    if (trimesh_source && !trimesh_source->vertices.empty())
+      (void)physics_.create_static_mesh(*trimesh_source, glm::vec3(0.0F, -3.0F, 0.0F));
 
     for (std::uint32_t inst_idx : cube_instances) {
       const engine::MeshInstance &inst = scene_.instances()[inst_idx];
@@ -32,15 +32,12 @@ public:
       physics_bodies_.push_back({body_id, inst_idx});
     }
 
-    if (trimesh_source && !trimesh_source->vertices.empty())
-      (void)physics_.create_static_mesh(*trimesh_source, glm::vec3(0.0F));
+    character_ = std::make_unique<engine::physics::Character>(physics_, glm::vec3{0.0F, 10.0F, 5.0F});
 
-    character_ = std::make_unique<engine::physics::Character>(physics_, glm::vec3{0.0F, 20.0F, 3.0F});
-
-    std::cout << "Physics: " << physics_bodies_.size() << " cubes, 1 ground plane";
+    std::cout << "Physics: " << physics_bodies_.size();
     if (trimesh_source && !trimesh_source->vertices.empty())
-      std::cout << ", trimesh terrain";
-    std::cout << "\nCharacter at y=20\n";
+      std::cout << " cubes, trimesh terrain";
+    std::cout << "\nCharacter at y=10\n";
   }
 
   ~DemoServer() { stop(); }
@@ -63,6 +60,12 @@ public:
   }
 
   [[nodiscard]] auto scene_mutex() -> std::mutex & { return scene_mutex_; }
+
+  void set_character_velocity(const glm::vec3 &velocity) {
+    char_velocity_[0] = velocity.x;
+    char_velocity_[1] = velocity.y;
+    char_velocity_[2] = velocity.z;
+  }
 
 private:
   void loop() {
@@ -115,6 +118,8 @@ private:
     }
 
     physics_.step(delta);
+    character_->set_velocity(
+        glm::vec3{char_velocity_[0].load(), char_velocity_[1].load(), char_velocity_[2].load()});
     character_->update(delta);
 
     const glm::vec3 char_pos = character_->position();
@@ -138,5 +143,6 @@ private:
   engine::physics::PhysicsWorld physics_;
   std::unique_ptr<engine::physics::Character> character_;
   std::uint32_t character_instance_{};
+  std::atomic<float> char_velocity_[3]{{0.0F}, {0.0F}, {0.0F}};
   std::vector<PhysicsEntry> physics_bodies_;
 };
