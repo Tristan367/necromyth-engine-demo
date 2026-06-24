@@ -156,6 +156,15 @@ void DemoApp::run() {
       impl.server.set_character_velocity(world_vel);
     }
 
+    if (impl.character_mode) {
+      const glm::vec3 char_pos = impl.server.character_position();
+      const glm::vec3 look_dir = impl.scene.camera().look_direction();
+      const float eye_height = 1.5F;
+      impl.scene.camera().look_at(
+          glm::vec3(char_pos.x, char_pos.y + eye_height, char_pos.z),
+          glm::vec3(char_pos.x, char_pos.y + eye_height, char_pos.z) + look_dir);
+    }
+
     {
       std::lock_guard lock(impl.server.scene_mutex());
       update_demo_scene(impl.scene);

@@ -67,6 +67,10 @@ public:
     char_velocity_[2] = velocity.z;
   }
 
+  [[nodiscard]] auto character_position() const -> glm::vec3 {
+    return {char_position_[0].load(), char_position_[1].load(), char_position_[2].load()};
+  }
+
 private:
   void loop() {
     std::uint64_t last_tick = SDL_GetTicks();
@@ -118,13 +122,25 @@ private:
     }
 
     physics_.step(delta);
-    character_->set_velocity(
-        glm::vec3{char_velocity_[0].load(), char_velocity_[1].load(), char_velocity_[2].load()});
+
+    {
+      glm::vec3 vel{char_velocity_[0].load(), char_velocity_[1].load(), char_velocity_[2].load()};
+      if (vel.x != 0.0F || vel.y != 0.0F || vel.z != 0.0F) {
+        character_->set_velocity(vel);
+        char_velocity_[0] = 0.0F;
+        char_velocity_[1] = 0.0F;
+        char_velocity_[2] = 0.0F;
+      }
+    }
     character_->update(delta);
 
     const glm::vec3 char_pos = character_->position();
     scene_.instance(character_instance_).model =
         glm::translate(glm::mat4(1.0F), char_pos);
+
+    char_position_[0] = char_pos.x;
+    char_position_[1] = char_pos.y;
+    char_position_[2] = char_pos.z;
 
     for (const auto &pb : physics_bodies_)
       physics_.sync_body_to_instance(pb.body_id, scene_.instance(pb.instance_index));
@@ -144,5 +160,6 @@ private:
   std::unique_ptr<engine::physics::Character> character_;
   std::uint32_t character_instance_{};
   std::atomic<float> char_velocity_[3]{{0.0F}, {0.0F}, {0.0F}};
+  std::atomic<float> char_position_[3]{{0.0F}, {10.0F}, {5.0F}};
   std::vector<PhysicsEntry> physics_bodies_;
 };
