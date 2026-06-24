@@ -131,6 +131,7 @@ void DemoApp::run() {
 
     {
       std::lock_guard lock(impl.server.scene_mutex());
+      impl.vulkan.sync_scene(impl.scene);
       impl.vulkan.draw_frame(impl.scene);
     }
   }
