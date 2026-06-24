@@ -35,6 +35,7 @@ struct DemoApp::Impl {
   engine::EngineConfig config;
   engine::SdlContext sdl;
   engine::SdlWindow window;
+  std::vector<std::uint32_t> physics_indices_;
   engine::Scene scene;
   engine::VulkanContext vulkan;
   DemoServer server;
@@ -43,7 +44,6 @@ struct DemoApp::Impl {
   InputRouter input;
   std::uint64_t last_frame_counter{};
   bool running{true};
-  std::vector<std::uint32_t> physics_indices_;
 
   explicit Impl(engine::EngineConfig config_in)
       : config(std::move(config_in)),
