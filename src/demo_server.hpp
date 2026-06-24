@@ -35,7 +35,7 @@ public:
     }
 
     character_ = std::make_unique<engine::physics::Character>(physics_, glm::vec3{0.0F, 5.0F, 0.0F},
-                                                                0.35F, 0.8F);
+                                                                0.5F, 0.8F);
 
     std::cout << "Physics: " << physics_bodies_.size() << " cubes, ground plane\nCharacter at y=5\n";
   }
@@ -76,22 +76,31 @@ public:
 
 private:
   void loop() {
-    std::uint64_t last_tick = SDL_GetTicks();
-    const std::uint64_t tick_interval_ms = 1000 / static_cast<std::uint64_t>(tick_rate_);
+    static constexpr float k_fixed_dt = 1.0F / 60.0F;
+    static constexpr float k_max_frame_time = 0.25F;
+
+    std::uint64_t last_time = SDL_GetTicks();
+    float accumulator = 0.0F;
 
     while (running_) {
       const std::uint64_t now = SDL_GetTicks();
-      const float delta = static_cast<float>(now - last_tick) / 1000.0F;
-      last_tick = now;
+      float frame_time = static_cast<float>(now - last_time) / 1000.0F;
+      last_time = now;
 
-      {
-        std::lock_guard lock(scene_mutex_);
-        tick(delta);
+      if (frame_time > k_max_frame_time)
+        frame_time = k_max_frame_time;
+
+      accumulator += frame_time;
+
+      while (accumulator >= k_fixed_dt) {
+        {
+          std::lock_guard lock(scene_mutex_);
+          tick(k_fixed_dt);
+        }
+        accumulator -= k_fixed_dt;
       }
 
-      const std::uint64_t elapsed = SDL_GetTicks() - now;
-      if (elapsed < tick_interval_ms)
-        SDL_Delay(static_cast<std::uint32_t>(tick_interval_ms - elapsed));
+      SDL_Delay(1);
     }
   }
 
