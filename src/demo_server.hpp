@@ -62,6 +62,7 @@ private:
 
       const std::uint32_t inst_idx = scene_.add_instance({
           .mesh_index = mesh_idx,
+          .texture_index = 0,
           .model = glm::translate(glm::mat4(1.0F), pos),
           .layer = engine::RenderLayer::Opaque,
       });
