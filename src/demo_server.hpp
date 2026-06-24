@@ -31,6 +31,8 @@ public:
       physics_bodies_.push_back({body_id, inst_idx});
     }
 
+    character_ = std::make_unique<engine::physics::Character>(physics_, glm::vec3{0.0F, 2.0F, 3.0F});
+
     if (!physics_bodies_.empty())
       std::cout << "Physics: " << physics_bodies_.size()
                 << " dynamic cubes, 1 ground plane\n";
@@ -108,6 +110,7 @@ private:
     }
 
     physics_.step(delta);
+    character_->update(delta);
 
     for (const auto &pb : physics_bodies_)
       physics_.sync_body_to_instance(pb.body_id, scene_.instance(pb.instance_index));
@@ -124,5 +127,6 @@ private:
   std::mutex scene_mutex_;
   int tick_rate_;
   engine::physics::PhysicsWorld physics_;
+  std::unique_ptr<engine::physics::Character> character_;
   std::vector<PhysicsEntry> physics_bodies_;
 };
