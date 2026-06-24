@@ -32,6 +32,10 @@ constexpr auto tile_array_layers = std::array{
 
 } // namespace
 
+static std::vector<std::uint32_t> cube_instance_indices;
+
+static void add_physics_cube_instances(engine::Scene &scene, std::vector<std::uint32_t> &out_indices);
+
 void populate_demo_scene(engine::Scene &scene) {
   const DemoMeshLibrary assets = load_demo_mesh_library(scene);
   std::unordered_map<std::string, std::uint32_t> texture_cache;
@@ -209,13 +213,20 @@ void populate_demo_scene(engine::Scene &scene) {
 
   add_animation_test_model(scene, texture_cache);
 
+  std::vector<std::uint32_t> physics_instances;
+  add_physics_cube_instances(scene, physics_instances);
+  cube_instance_indices = physics_instances;
+
   (void)texture_cache;
   (void)alpha_test_texture;
 }
 
-auto create_demo_scene() -> engine::Scene {
+auto create_demo_scene(std::vector<std::uint32_t> *out_physics_indices) -> engine::Scene {
   engine::Scene scene;
   populate_demo_scene(scene);
+  if (out_physics_indices)
+    *out_physics_indices = cube_instance_indices;
+  cube_instance_indices.clear();
   return scene;
 }
 
@@ -233,6 +244,24 @@ void toggle_demo_animation(engine::Scene &scene) {
     instance.next_animation_time = 0.0F;
     instance.blend_factor = 0.0F;
     std::cout << "Crossfading to: " << scene.animations()[next].name << '\n';
+  }
+}
+
+void add_physics_cube_instances(engine::Scene &scene, std::vector<std::uint32_t> &out_indices) {
+  const engine::MeshSource cube_mesh = app::make_cube_mesh(0.5F);
+  const std::array positions{
+      glm::vec3{0.0F, 2.0F, 0.0F},
+      glm::vec3{0.5F, 4.0F, 0.3F},
+      glm::vec3{-0.4F, 6.0F, -0.2F},
+  };
+  for (const glm::vec3 &pos : positions) {
+    const std::uint32_t mesh_idx = scene.add_mesh(cube_mesh);
+    out_indices.push_back(scene.add_instance({
+        .mesh_index = mesh_idx,
+        .texture_index = 0,
+        .model = glm::translate(glm::mat4(1.0F), pos),
+        .layer = engine::RenderLayer::Opaque,
+    }));
   }
 }
 

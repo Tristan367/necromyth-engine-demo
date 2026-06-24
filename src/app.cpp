@@ -17,6 +17,7 @@
 #include <iostream>
 #include <mutex>
 #include <utility>
+#include <vector>
 
 namespace app {
 
@@ -42,13 +43,14 @@ struct DemoApp::Impl {
   InputRouter input;
   std::uint64_t last_frame_counter{};
   bool running{true};
+  std::vector<std::uint32_t> physics_indices_;
 
   explicit Impl(engine::EngineConfig config_in)
       : config(std::move(config_in)),
         window("Necromyth Engine Demo", config.window_width, config.window_height),
-        scene(create_demo_scene()),
+        scene(create_demo_scene(&physics_indices_)),
         vulkan(window.handle(), config, scene),
-        server(scene),
+        server(scene, physics_indices_),
         debug_ui(window.handle(), vulkan) {
     std::signal(SIGINT, on_quit_signal);
     std::signal(SIGTERM, on_quit_signal);
@@ -67,7 +69,6 @@ struct DemoApp::Impl {
     std::cout << "Menu: Resume or Quit. Debug panel: shadow toggles, FPS.\n";
 
     server.start();
-    vulkan.sync_scene(scene);
   }
 
   ~Impl() {
