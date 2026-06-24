@@ -1,5 +1,6 @@
 #pragma once
 
+#include "physics/physics_world.hpp"
 #include "scene/animation_utils.hpp"
 #include "scene/scene.hpp"
 
@@ -12,11 +13,14 @@
 #include <iostream>
 #include <mutex>
 #include <thread>
+#include <vector>
 
 class DemoServer {
 public:
   explicit DemoServer(engine::Scene &scene, int tick_rate = 60)
-      : scene_{scene}, tick_rate_{tick_rate} {}
+      : scene_{scene}, tick_rate_{tick_rate}, physics_(1024) {
+    setup_physics_test();
+  }
 
   ~DemoServer() { stop(); }
 
@@ -40,6 +44,69 @@ public:
   [[nodiscard]] auto scene_mutex() -> std::mutex & { return scene_mutex_; }
 
 private:
+  void setup_physics_test() {
+    // Ground plane (static, no mesh — invisible collision)
+    physics_.create_static_box({10.0F, 0.5F, 10.0F}, {0.0F, -1.0F, 0.0F});
+
+    const float half = 0.5F;
+    const std::array<glm::vec3, 3> positions = {
+        glm::vec3{0.0F, 2.0F, 0.0F},
+        glm::vec3{0.5F, 4.0F, 0.3F},
+        glm::vec3{-0.4F, 6.0F, -0.2F},
+    };
+
+    for (const glm::vec3 &pos : positions) {
+      const std::uint32_t mesh_idx = scene_.add_mesh(create_cube_mesh(half));
+      const JPH::BodyID body_id =
+          physics_.create_dynamic_box({half, half, half}, pos);
+
+      const std::uint32_t inst_idx = scene_.add_instance({
+          .mesh_index = mesh_idx,
+          .model = glm::translate(glm::mat4(1.0F), pos),
+          .layer = engine::RenderLayer::Opaque,
+      });
+
+      physics_bodies_.push_back({body_id, inst_idx});
+    }
+
+    if (!physics_bodies_.empty())
+      std::cout << "Physics: " << physics_bodies_.size() << " dynamic cubes, 1 ground plane\n";
+  }
+
+  [[nodiscard]] static auto create_cube_mesh(float half) -> engine::MeshSource {
+    engine::MeshSource mesh;
+
+    auto v = [&](float x, float y, float z, float nx, float ny, float nz, float u, float v) {
+      engine::MeshVertex vert{};
+      vert.pos[0] = x * half; vert.pos[1] = y * half; vert.pos[2] = z * half;
+      vert.normal[0] = nx; vert.normal[1] = ny; vert.normal[2] = nz;
+      vert.color[0] = 1.0F; vert.color[1] = 1.0F; vert.color[2] = 1.0F;
+      vert.tex_coord[0] = u; vert.tex_coord[1] = v;
+      return vert;
+    };
+
+    auto face = [&](std::uint32_t base, float nx, float ny, float nz,
+                    float x0, float y0, float z0, float x1, float y1, float z1,
+                    float x2, float y2, float z2, float x3, float y3, float z3) {
+      mesh.vertices.push_back(v(x0, y0, z0, nx, ny, nz, 0, 0));
+      mesh.vertices.push_back(v(x1, y1, z1, nx, ny, nz, 1, 0));
+      mesh.vertices.push_back(v(x2, y2, z2, nx, ny, nz, 1, 1));
+      mesh.vertices.push_back(v(x3, y3, z3, nx, ny, nz, 0, 1));
+      mesh.indices.push_back(base + 0); mesh.indices.push_back(base + 1); mesh.indices.push_back(base + 2);
+      mesh.indices.push_back(base + 0); mesh.indices.push_back(base + 2); mesh.indices.push_back(base + 3);
+    };
+
+    // +Y, -Y, +X, -X, +Z, -Z
+    face(0,  0, 1, 0,  -1, 1,  1,   1, 1,  1,   1, 1, -1,  -1, 1, -1);
+    face(4,  0,-1, 0,  -1,-1, -1,  -1,-1,  1,   1,-1,  1,   1,-1, -1);
+    face(8,  1, 0, 0,   1,-1,  1,   1,-1, -1,   1, 1, -1,   1, 1,  1);
+    face(12,-1, 0, 0,  -1,-1, -1,  -1,-1,  1,  -1, 1,  1,  -1, 1, -1);
+    face(16, 0, 0, 1,  -1,-1,  1,  -1, 1,  1,   1, 1,  1,   1,-1,  1);
+    face(20, 0, 0,-1,   1,-1, -1,   1, 1, -1,  -1, 1, -1,  -1,-1, -1);
+
+    return mesh;
+  }
+
   void loop() {
     std::uint64_t last_tick = SDL_GetTicks();
     const std::uint64_t tick_interval_ms = 1000 / static_cast<std::uint64_t>(tick_rate_);
@@ -61,6 +128,7 @@ private:
   }
 
   void tick(float delta) {
+    // Advance animations
     for (engine::MeshInstance &instance : scene_.instances()) {
       if (instance.skin_index == engine::k_invalid_skin_index)
         continue;
@@ -88,11 +156,25 @@ private:
         }
       }
     }
+
+    // Step physics
+    physics_.step(delta);
+
+    // Sync physics bodies to mesh instances
+    for (const PhysicsBody &pb : physics_bodies_)
+      physics_.sync_body_to_instance(pb.body_id, scene_.instance(pb.instance_index));
   }
+
+  struct PhysicsBody {
+    JPH::BodyID body_id;
+    std::uint32_t instance_index;
+  };
 
   engine::Scene &scene_;
   std::thread thread_;
   std::atomic<bool> running_{false};
   std::mutex scene_mutex_;
   int tick_rate_;
+  engine::physics::PhysicsWorld physics_;
+  std::vector<PhysicsBody> physics_bodies_;
 };
