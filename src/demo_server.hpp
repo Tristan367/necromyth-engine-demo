@@ -19,7 +19,7 @@ public:
   explicit DemoServer(engine::Scene &scene, const std::vector<std::uint32_t> &physics_instances,
                       int tick_rate = 60)
       : scene_{scene}, tick_rate_{tick_rate}, physics_(1024) {
-    physics_.create_box({20.0F, 0.5F, 20.0F}, {0.0F, -0.5F, 0.0F},
+    (void)physics_.create_box({20.0F, 0.5F, 20.0F}, {0.0F, -0.5F, 0.0F},
                         JPH::EMotionType::Static, engine::physics::Layers::kNonMoving);
 
     for (std::uint32_t inst_idx : physics_instances) {
