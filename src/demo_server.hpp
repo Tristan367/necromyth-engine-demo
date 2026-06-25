@@ -66,8 +66,7 @@ public:
     input_jump_ = jump;
   }
 
-  [[nodiscard]] auto character_position() -> glm::vec3 {
-    std::lock_guard lock(scene_mutex_);
+  [[nodiscard]] auto character_position() const -> glm::vec3 {
     const float elapsed = static_cast<float>(SDL_GetTicks() - render_state_.write_time_ms);
     const float fraction = std::clamp(elapsed / (1000.0F / 60.0F), 0.0F, 1.0F);
     return glm::mix(render_state_.prev, render_state_.curr, fraction);
