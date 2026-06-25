@@ -66,6 +66,13 @@ public:
     input_jump_ = jump;
   }
 
+  [[nodiscard]] auto character_position() -> glm::vec3 {
+    std::lock_guard lock(scene_mutex_);
+    const float elapsed = static_cast<float>(SDL_GetTicks() - render_state_.write_time_ms);
+    const float fraction = std::clamp(elapsed / (1000.0F / 60.0F), 0.0F, 1.0F);
+    return glm::mix(render_state_.prev, render_state_.curr, fraction);
+  }
+
 private:
   void loop() {
     static constexpr float k_fixed_dt = 1.0F / 60.0F;
@@ -158,6 +165,10 @@ private:
     const glm::vec3 char_pos = character_->position();
     scene_.instance(character_instance_).model = glm::translate(glm::mat4(1.0F), char_pos);
 
+    render_state_.prev = render_state_.curr;
+    render_state_.curr = char_pos;
+    render_state_.write_time_ms = SDL_GetTicks();
+
     for (const auto &pb : physics_bodies_)
       physics_.sync_body_to_instance(pb.body_id, scene_.instance(pb.instance_index));
   }
@@ -178,4 +189,10 @@ private:
   std::atomic<float> input_right_{0.0F};
   std::atomic<bool> input_jump_{false};
   std::vector<PhysicsEntry> physics_bodies_;
+
+  struct RenderState {
+    glm::vec3 prev{0.0F, 5.0F, 0.0F};
+    glm::vec3 curr{0.0F, 5.0F, 0.0F};
+    std::uint64_t write_time_ms{};
+  } render_state_;
 };

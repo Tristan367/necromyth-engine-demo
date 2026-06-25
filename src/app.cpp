@@ -161,7 +161,7 @@ void DemoApp::run() {
       update_demo_scene(impl.scene);
 
       if (impl.character_mode) {
-        const glm::vec3 char_pos = impl.scene.instances()[impl.char_instance_].model[3];
+        const glm::vec3 char_pos = impl.server.character_position();
         const glm::vec3 look_fwd = impl.fly_camera.forward();
         impl.scene.camera().look_at(
             glm::vec3(char_pos.x, char_pos.y + 1.5F, char_pos.z),
