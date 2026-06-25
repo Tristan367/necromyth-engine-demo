@@ -59,6 +59,8 @@ public:
     const glm::vec3 forward = camera.look_direction();
     pitch_ = std::asin(std::clamp(forward.y, -1.0F, 1.0F));
     yaw_ = std::atan2(forward.z, forward.x);
+    target_pitch_ = pitch_;
+    target_yaw_ = yaw_;
   }
 
   [[nodiscard]] auto forward() const -> glm::vec3 {
@@ -69,16 +71,17 @@ public:
     if (event.type == SDL_EVENT_WINDOW_FOCUS_LOST)
       release_capture();
     else if (event.type == SDL_EVENT_MOUSE_MOTION && captured_) {
-      const float t = mouse_smoothing_ < 1.0F ? mouse_smoothing_ : 1.0F;
-      smoothed_x_ = std::lerp(static_cast<float>(event.motion.xrel), smoothed_x_, t);
-      smoothed_y_ = std::lerp(static_cast<float>(event.motion.yrel), smoothed_y_, t);
-      yaw_ += smoothed_x_ * mouse_sensitivity_;
-      pitch_ -= smoothed_y_ * mouse_sensitivity_;
-      pitch_ = std::clamp(pitch_, -glm::half_pi<float>() + 0.01F, glm::half_pi<float>() - 0.01F);
+      target_yaw_   += static_cast<float>(event.motion.xrel) * mouse_sensitivity_;
+      target_pitch_ -= static_cast<float>(event.motion.yrel) * mouse_sensitivity_;
+      target_pitch_ = std::clamp(target_pitch_, -glm::half_pi<float>() + 0.01F, glm::half_pi<float>() - 0.01F);
     }
   }
 
   void update(engine::Camera &camera, float delta_seconds) {
+    const float t = mouse_lerp_factor_ * delta_seconds;
+    yaw_   = std::lerp(yaw_,   target_yaw_,   t);
+    pitch_ = std::lerp(pitch_, target_pitch_, t);
+
     const bool *keyboard = SDL_GetKeyboardState(nullptr);
     if (keyboard == nullptr)
       return;
@@ -116,12 +119,12 @@ private:
   glm::vec3 position_{2.0F, 1.5F, 4.0F};
   float yaw_{};
   float pitch_{};
+  float target_yaw_{};
+  float target_pitch_{};
   float move_speed_{6.0F};
   float fast_speed_{18.0F};
   float mouse_sensitivity_{0.002F};
-  float mouse_smoothing_{0.3F};
-  float smoothed_x_{0.0F};
-  float smoothed_y_{0.0F};
+  float mouse_lerp_factor_{13.0F};
   bool captured_{false};
 };
 
