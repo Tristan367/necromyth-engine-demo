@@ -135,14 +135,10 @@ void DemoApp::run() {
       bool jump = false;
 
       if (keys[SDL_SCANCODE_W]) input_fwd += 1.0F;
-      if (keys[SDL_SCANCODE_S]) input_fwd -= 1.0F;
-      if (keys[SDL_SCANCODE_D]) input_rgt += 1.0F;
-      if (keys[SDL_SCANCODE_A]) input_rgt -= 1.0F;
+      if (keys[SDL_SCANCODE_S]) input_fwd -= 0.7F;
+      if (keys[SDL_SCANCODE_D]) input_rgt += 0.7F;
+      if (keys[SDL_SCANCODE_A]) input_rgt -= 0.7F;
       if (keys[SDL_SCANCODE_SPACE]) jump = true;
-
-      // Normalize input so diagonal isn't faster
-      float mag = std::sqrt(input_fwd * input_fwd + input_rgt * input_rgt);
-      if (mag > 1.0F) { input_fwd /= mag; input_rgt /= mag; }
 
       // Convert local input to world-space velocity via camera forward
       const glm::vec3 look = impl.fly_camera.forward();
