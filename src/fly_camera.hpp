@@ -69,8 +69,9 @@ public:
     if (event.type == SDL_EVENT_WINDOW_FOCUS_LOST)
       release_capture();
     else if (event.type == SDL_EVENT_MOUSE_MOTION && captured_) {
-      smoothed_x_ = std::lerp(smoothed_x_, static_cast<float>(event.motion.xrel), mouse_smoothing_);
-      smoothed_y_ = std::lerp(smoothed_y_, static_cast<float>(event.motion.yrel), mouse_smoothing_);
+      const float t = mouse_smoothing_ < 1.0F ? mouse_smoothing_ : 1.0F;
+      smoothed_x_ = std::lerp(static_cast<float>(event.motion.xrel), smoothed_x_, t);
+      smoothed_y_ = std::lerp(static_cast<float>(event.motion.yrel), smoothed_y_, t);
       yaw_ += smoothed_x_ * mouse_sensitivity_;
       pitch_ -= smoothed_y_ * mouse_sensitivity_;
       pitch_ = std::clamp(pitch_, -glm::half_pi<float>() + 0.01F, glm::half_pi<float>() - 0.01F);

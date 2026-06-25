@@ -146,9 +146,8 @@ private:
         vel.x = input_forward_ * 5.0F;
         vel.z = input_right_ * 5.0F;
       }
+      vel.y += -9.81F * delta;
     }
-
-    vel.y += -9.81F * delta;
 
     float drag = grounded ? 8.0F : 2.0F;
     float t = 1.0F - std::exp(-drag * delta);
