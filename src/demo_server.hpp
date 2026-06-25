@@ -128,27 +128,25 @@ private:
 
     physics_.step(delta);
 
-    // Jolt-aligned character update (matches CharacterVirtualTest sample)
     character_->update_ground_velocity();
 
-    glm::vec3 vel;
+    glm::vec3 vel = character_->linear_velocity();
     const bool grounded = character_->is_on_ground();
 
-    if (grounded) {
-      vel = character_->ground_velocity();
-      vel.x += input_forward_ * 5.0F;
-      vel.z += input_right_ * 5.0F;
-      if (input_jump_)
-        vel.y += 6.0F;
-    } else {
-      vel = character_->linear_velocity();
-      if (input_forward_ != 0.0F || input_right_ != 0.0F) {
-        vel.x = input_forward_ * 0.5F;
-        vel.z = input_right_ * 0.5F;
-      }
-      vel.y += -9.81F * delta;
-    }
+    // Acceleration — always additive, never sets velocity
+    const float air_speed = grounded ? 30.0F : 1.5F;
+    vel.x += input_forward_ * air_speed * delta;
+    vel.z += input_right_ * air_speed * delta;
 
+    // Jump
+    if (input_jump_ && grounded)
+      vel.y = 6.0F;
+
+    // Gravity (only in air)
+    if (!grounded)
+      vel.y += -9.81F * delta;
+
+    // Friction/Drag
     float drag = grounded ? 8.0F : 0.5F;
     float t = 1.0F - std::exp(-drag * delta);
     vel.x = std::lerp(vel.x, 0.0F, t);

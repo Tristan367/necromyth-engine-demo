@@ -129,6 +129,7 @@ void DemoApp::run() {
       impl.fly_camera.update(impl.scene.camera(), delta_seconds);
 
     if (impl.character_mode && !menu_open) {
+      impl.fly_camera.update_orientation(delta_seconds);
       const bool *keys = SDL_GetKeyboardState(nullptr);
       float input_fwd = 0.0F;
       float input_rgt = 0.0F;

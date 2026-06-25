@@ -78,10 +78,27 @@ public:
   }
 
   void update(engine::Camera &camera, float delta_seconds) {
+    update_orientation(delta_seconds);
+    update_position(camera, delta_seconds);
+  }
+
+  void update_orientation(float delta_seconds) {
     const float t = mouse_lerp_factor_ * delta_seconds;
     yaw_   = std::lerp(yaw_,   target_yaw_,   t);
     pitch_ = std::lerp(pitch_, target_pitch_, t);
+  }
 
+private:
+  [[nodiscard]] auto orientation_forward() const -> glm::vec3 {
+    const float cos_pitch = std::cos(pitch_);
+    return glm::normalize(glm::vec3{
+        cos_pitch * std::cos(yaw_),
+        std::sin(pitch_),
+        cos_pitch * std::sin(yaw_),
+    });
+  }
+
+  void update_position(engine::Camera &camera, float delta_seconds) {
     const bool *keyboard = SDL_GetKeyboardState(nullptr);
     if (keyboard == nullptr)
       return;
@@ -103,16 +120,6 @@ public:
       position_ += glm::normalize(velocity) * speed * delta_seconds;
 
     camera.look_at(position_, position_ + forward);
-  }
-
-private:
-  [[nodiscard]] auto orientation_forward() const -> glm::vec3 {
-    const float cos_pitch = std::cos(pitch_);
-    return glm::normalize(glm::vec3{
-        cos_pitch * std::cos(yaw_),
-        std::sin(pitch_),
-        cos_pitch * std::sin(yaw_),
-    });
   }
 
   SDL_Window *window_{nullptr};
