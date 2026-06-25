@@ -140,26 +140,12 @@ void DemoApp::run() {
       if (keys[SDL_SCANCODE_A]) input_rgt -= 0.7F;
       if (keys[SDL_SCANCODE_SPACE]) jump = true;
 
-      // Convert local input to world-space velocity via camera forward
       const glm::vec3 look = impl.fly_camera.forward();
       const glm::vec3 fwd = glm::normalize(glm::vec3(look.x, 0.0F, look.z));
       const glm::vec3 rgt = glm::normalize(glm::cross(fwd, glm::vec3(0.0F, 1.0F, 0.0F)));
       const glm::vec3 world_vel = fwd * input_fwd + rgt * input_rgt;
 
       impl.server.set_input(world_vel.x, world_vel.z, jump);
-    }
-
-    if (impl.character_mode) {
-      const glm::vec3 look_fwd = impl.fly_camera.forward();
-      const glm::vec3 char_pos = impl.scene.instances()[impl.char_instance_].model[3];
-      impl.scene.camera().look_at(
-          glm::vec3(char_pos.x, char_pos.y + 1.5F, char_pos.z),
-          glm::vec3(char_pos.x, char_pos.y + 1.5F, char_pos.z) + look_fwd);
-    }
-
-    {
-      std::lock_guard lock(impl.server.scene_mutex());
-      update_demo_scene(impl.scene);
     }
 
     const UiFrameResult ui = impl.debug_ui.begin_frame(impl.scene, delta_seconds, menu_open);
@@ -171,6 +157,16 @@ void DemoApp::run() {
 
     {
       std::lock_guard lock(impl.server.scene_mutex());
+      update_demo_scene(impl.scene);
+
+      if (impl.character_mode) {
+        const glm::vec3 char_pos = impl.scene.instances()[impl.char_instance_].model[3];
+        const glm::vec3 look_fwd = impl.fly_camera.forward();
+        impl.scene.camera().look_at(
+            glm::vec3(char_pos.x, char_pos.y + 1.5F, char_pos.z),
+            glm::vec3(char_pos.x, char_pos.y + 1.5F, char_pos.z) + look_fwd);
+      }
+
       impl.vulkan.draw_frame(impl.scene);
     }
   }
