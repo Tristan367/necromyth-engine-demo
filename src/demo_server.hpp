@@ -143,13 +143,13 @@ private:
     } else {
       vel = character_->linear_velocity();
       if (input_forward_ != 0.0F || input_right_ != 0.0F) {
-        vel.x = input_forward_ * 5.0F;
-        vel.z = input_right_ * 5.0F;
+        vel.x = input_forward_ * 0.5F;
+        vel.z = input_right_ * 0.5F;
       }
       vel.y += -9.81F * delta;
     }
 
-    float drag = grounded ? 8.0F : 2.0F;
+    float drag = grounded ? 8.0F : 0.5F;
     float t = 1.0F - std::exp(-drag * delta);
     vel.x = std::lerp(vel.x, 0.0F, t);
     vel.z = std::lerp(vel.z, 0.0F, t);

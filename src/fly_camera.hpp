@@ -119,7 +119,7 @@ private:
   float move_speed_{6.0F};
   float fast_speed_{18.0F};
   float mouse_sensitivity_{0.002F};
-  float mouse_smoothing_{0.6F};
+  float mouse_smoothing_{0.3F};
   float smoothed_x_{0.0F};
   float smoothed_y_{0.0F};
   bool captured_{false};
