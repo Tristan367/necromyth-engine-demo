@@ -98,6 +98,8 @@ private:
         accumulator -= k_fixed_dt;
       }
 
+      capture_render_state();
+
       SDL_Delay(1);
     }
   }
@@ -164,12 +166,15 @@ private:
     const glm::vec3 char_pos = character_->position();
     scene_.instance(character_instance_).model = glm::translate(glm::mat4(1.0F), char_pos);
 
-    render_state_.prev = render_state_.curr;
-    render_state_.curr = char_pos;
-    render_state_.write_time_ms = SDL_GetTicks();
-
     for (const auto &pb : physics_bodies_)
       physics_.sync_body_to_instance(pb.body_id, scene_.instance(pb.instance_index));
+  }
+
+  void capture_render_state() {
+    const glm::vec3 pos = character_->position();
+    render_state_.prev = render_state_.curr;
+    render_state_.curr = pos;
+    render_state_.write_time_ms = SDL_GetTicks();
   }
 
   struct PhysicsEntry {
