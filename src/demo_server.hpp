@@ -142,8 +142,10 @@ private:
         vel.y += 6.0F;
     } else {
       vel = character_->linear_velocity();
-      vel.x += input_forward_ * 5.0F;
-      vel.z += input_right_ * 5.0F;
+      if (input_forward_ != 0.0F || input_right_ != 0.0F) {
+        vel.x = input_forward_ * 5.0F;
+        vel.z = input_right_ * 5.0F;
+      }
     }
 
     vel.y += -9.81F * delta;
