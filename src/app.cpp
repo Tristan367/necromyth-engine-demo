@@ -16,7 +16,6 @@
 
 #include <csignal>
 #include <iostream>
-#include <mutex>
 #include <utility>
 #include <vector>
 
@@ -47,6 +46,7 @@ struct DemoApp::Impl {
   std::uint64_t last_frame_counter{};
   bool running{true};
   bool character_mode{false};
+  float physics_accumulator_{0.0F};
 
   explicit Impl(engine::EngineConfig config_in)
       : config(std::move(config_in)),
@@ -70,12 +70,9 @@ struct DemoApp::Impl {
       std::cout << " (requested index " << *config.gpu_device_index << ')';
     std::cout << "\nEsc: menu / resume fly mode. WASD move, Space/C vertical, Shift sprint.\n";
     std::cout << "Menu: Resume or Quit. Debug panel: shadow toggles, FPS.\n";
-
-    server.start();
   }
 
   ~Impl() {
-    server.stop();
     fly_camera.release_capture();
   }
 };
@@ -86,6 +83,7 @@ DemoApp::~DemoApp() = default;
 
 void DemoApp::run() {
   Impl &impl = *impl_;
+  static constexpr float k_fixed_dt = 1.0F / 60.0F;
 
   while (impl.running) {
     if (g_quit_requested != 0)
@@ -101,10 +99,8 @@ void DemoApp::run() {
       impl.input.process_event(event, impl.debug_ui, impl.fly_camera);
 
       if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_E &&
-          !impl.debug_ui.wants_keyboard()) {
-        std::lock_guard lock(impl.server.scene_mutex());
+          !impl.debug_ui.wants_keyboard())
         toggle_demo_animation(impl.scene);
-      }
 
       if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_TAB &&
           !impl.debug_ui.wants_keyboard()) {
@@ -128,12 +124,14 @@ void DemoApp::run() {
     if (!impl.character_mode && impl.input.should_update_camera(impl.debug_ui, impl.fly_camera))
       impl.fly_camera.update(impl.scene.camera(), delta_seconds);
 
+    // Read input once per frame
+    float input_fwd = 0.0F;
+    float input_rgt = 0.0F;
+    bool jump = false;
+
     if (impl.character_mode && !menu_open) {
       impl.fly_camera.update_orientation(delta_seconds);
       const bool *keys = SDL_GetKeyboardState(nullptr);
-      float input_fwd = 0.0F;
-      float input_rgt = 0.0F;
-      bool jump = false;
 
       if (keys[SDL_SCANCODE_W]) input_fwd += 1.0F;
       if (keys[SDL_SCANCODE_S]) input_fwd -= 0.7F;
@@ -145,8 +143,25 @@ void DemoApp::run() {
       const glm::vec3 fwd = glm::normalize(glm::vec3(look.x, 0.0F, look.z));
       const glm::vec3 rgt = glm::normalize(glm::cross(fwd, glm::vec3(0.0F, 1.0F, 0.0F)));
       const glm::vec3 world_vel = fwd * input_fwd + rgt * input_rgt;
+      input_fwd = world_vel.x;
+      input_rgt = world_vel.z;
+    }
 
-      impl.server.set_input(world_vel.x, world_vel.z, jump);
+    // Fixed-timestep physics ticks
+    impl.physics_accumulator_ += delta_seconds;
+    while (impl.physics_accumulator_ >= k_fixed_dt) {
+      impl.server.tick(k_fixed_dt, input_fwd, input_rgt, jump);
+      update_demo_scene(impl.scene);
+      impl.physics_accumulator_ -= k_fixed_dt;
+    }
+
+    // Camera follows character (after physics, before render)
+    if (impl.character_mode) {
+      const glm::vec3 char_pos = impl.server.character_position();
+      const glm::vec3 look_fwd = impl.fly_camera.forward();
+      impl.scene.camera().look_at(
+          glm::vec3(char_pos.x, char_pos.y + 1.5F, char_pos.z),
+          glm::vec3(char_pos.x, char_pos.y + 1.5F, char_pos.z) + look_fwd);
     }
 
     const UiFrameResult ui = impl.debug_ui.begin_frame(impl.scene, delta_seconds, menu_open);
@@ -156,20 +171,7 @@ void DemoApp::run() {
     if (ui.resume_requested)
       impl.fly_camera.set_capture(true);
 
-    {
-      std::lock_guard lock(impl.server.scene_mutex());
-      update_demo_scene(impl.scene);
-
-      if (impl.character_mode) {
-        const glm::vec3 char_pos = impl.server.character_position();
-        const glm::vec3 look_fwd = impl.fly_camera.forward();
-        impl.scene.camera().look_at(
-            glm::vec3(char_pos.x, char_pos.y + 1.5F, char_pos.z),
-            glm::vec3(char_pos.x, char_pos.y + 1.5F, char_pos.z) + look_fwd);
-      }
-
-      impl.vulkan.draw_frame(impl.scene);
-    }
+    impl.vulkan.draw_frame(impl.scene);
   }
 
   impl.vulkan.shutdown();

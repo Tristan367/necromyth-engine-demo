@@ -6,18 +6,15 @@
 
 #include <SDL3/SDL_timer.h>
 
-#include <atomic>
 #include <cmath>
 #include <cstdint>
 #include <iostream>
-#include <mutex>
-#include <thread>
 #include <vector>
 
 class DemoServer {
 public:
   explicit DemoServer(engine::Scene &scene, const std::vector<std::uint32_t> &cube_instances,
-                      std::uint32_t character_instance, int tick_rate = 60)
+                      std::uint32_t character_instance)
       : scene_{scene}, physics_(65536), character_instance_{character_instance} {
     (void)physics_.create_box({25.0F, 0.2F, 25.0F}, {0.0F, -0.2F, 0.0F},
                         JPH::EMotionType::Static, engine::physics::Layers::kNonMoving);
@@ -38,71 +35,13 @@ public:
     std::cout << "Physics: " << physics_bodies_.size() << " cubes, ground plane\n";
   }
 
-  ~DemoServer() { stop(); }
-
-  void start() {
-    if (running_)
-      return;
-    running_ = true;
-    std::cout << "Localhost server started\n";
-    thread_ = std::thread(&DemoServer::loop, this);
-  }
-
-  void stop() {
-    if (!running_)
-      return;
-    running_ = false;
-    if (thread_.joinable())
-      thread_.join();
-  }
-
-  [[nodiscard]] auto scene_mutex() -> std::mutex & { return scene_mutex_; }
-
-  // Called from main thread — sets horizontal velocity and jump flag.
-  // The server tick reads these atomically and zeroes them.
-  void set_input(float forward, float right, bool jump) {
-    input_forward_ = forward;
-    input_right_ = right;
-    input_jump_ = jump;
-  }
-
   [[nodiscard]] auto character_position() const -> glm::vec3 {
     const float elapsed = static_cast<float>(SDL_GetTicks() - render_state_.write_time_ms);
     const float fraction = std::clamp(elapsed / (1000.0F / 60.0F), 0.0F, 1.0F);
     return glm::mix(render_state_.prev, render_state_.curr, fraction);
   }
 
-private:
-  void loop() {
-    static constexpr float k_fixed_dt = 1.0F / 60.0F;
-    static constexpr float k_max_frame_time = 0.25F;
-
-    std::uint64_t last_time = SDL_GetTicks();
-    float accumulator = 0.0F;
-
-    while (running_) {
-      const std::uint64_t now = SDL_GetTicks();
-      float frame_time = static_cast<float>(now - last_time) / 1000.0F;
-      last_time = now;
-
-      if (frame_time > k_max_frame_time)
-        frame_time = k_max_frame_time;
-
-      accumulator += frame_time;
-
-      while (accumulator >= k_fixed_dt) {
-        {
-          std::lock_guard lock(scene_mutex_);
-          tick(k_fixed_dt);
-        }
-        accumulator -= k_fixed_dt;
-      }
-
-      SDL_Delay(1);
-    }
-  }
-
-  void tick(float delta) {
+  void tick(float delta, float input_forward, float input_right, bool input_jump) {
     // Animation update
     for (engine::MeshInstance &instance : scene_.instances()) {
       if (instance.skin_index == engine::k_invalid_skin_index)
@@ -139,20 +78,16 @@ private:
     glm::vec3 vel = character_->linear_velocity();
     const bool grounded = character_->is_on_ground();
 
-    // Acceleration — always additive, never sets velocity
-    const float air_speed = grounded ? 30.0F : 1.5F;
-    vel.x += input_forward_ * air_speed * delta;
-    vel.z += input_right_ * air_speed * delta;
+    const float accel = grounded ? 30.0F : 1.5F;
+    vel.x += input_forward * accel * delta;
+    vel.z += input_right * accel * delta;
 
-    // Jump
-    if (input_jump_ && grounded)
+    if (input_jump && grounded)
       vel.y = 6.0F;
 
-    // Gravity (only in air)
     if (!grounded)
       vel.y += -9.81F * delta;
 
-    // Friction/Drag
     float drag = grounded ? 8.0F : 0.5F;
     float t = 1.0F - std::exp(-drag * delta);
     vel.x = std::lerp(vel.x, 0.0F, t);
@@ -172,26 +107,22 @@ private:
       physics_.sync_body_to_instance(pb.body_id, scene_.instance(pb.instance_index));
   }
 
+private:
   struct PhysicsEntry {
     JPH::BodyID body_id;
     std::uint32_t instance_index;
   };
 
-  engine::Scene &scene_;
-  std::thread thread_;
-  std::atomic<bool> running_{false};
-  std::mutex scene_mutex_;
-  engine::physics::PhysicsWorld physics_;
-  std::unique_ptr<engine::physics::Character> character_;
-  std::uint32_t character_instance_{};
-  std::atomic<float> input_forward_{0.0F};
-  std::atomic<float> input_right_{0.0F};
-  std::atomic<bool> input_jump_{false};
-  std::vector<PhysicsEntry> physics_bodies_;
-
   struct RenderState {
     glm::vec3 prev{0.0F, 5.0F, 0.0F};
     glm::vec3 curr{0.0F, 5.0F, 0.0F};
     std::uint64_t write_time_ms{};
-  } render_state_;
+  };
+
+  engine::Scene &scene_;
+  engine::physics::PhysicsWorld physics_;
+  std::unique_ptr<engine::physics::Character> character_;
+  std::uint32_t character_instance_{};
+  RenderState render_state_;
+  std::vector<PhysicsEntry> physics_bodies_;
 };
