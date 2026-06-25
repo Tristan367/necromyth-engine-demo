@@ -128,30 +128,33 @@ private:
 
     physics_.step(delta);
 
-    // Additive character movement
-    glm::vec3 vel = character_->linear_velocity();
+    // Jolt-aligned character update (matches CharacterVirtualTest sample)
+    character_->update_ground_velocity();
+
+    glm::vec3 vel;
     const bool grounded = character_->is_on_ground();
 
-    // Gravity — accumulate ourselves (CharacterVirtual::Update doesn't accumulate)
+    if (grounded) {
+      vel = character_->ground_velocity();
+      vel.x += input_forward_ * 5.0F;
+      vel.z += input_right_ * 5.0F;
+      if (input_jump_)
+        vel.y += 6.0F;
+    } else {
+      vel = character_->linear_velocity();
+      vel.x += input_forward_ * 5.0F;
+      vel.z += input_right_ * 5.0F;
+    }
+
     vel.y += -9.81F * delta;
 
-    // Input acceleration
-    constexpr float k_accel = 30.0F;
-    vel.x += input_forward_ * k_accel * delta;
-    vel.z += input_right_ * k_accel * delta;
-
-    // Drag: lerp horizontal toward 0 (strong on ground, light in air)
     float drag = grounded ? 8.0F : 2.0F;
-    float lerp_t = 1.0F - std::exp(-drag * delta);
-    vel.x = std::lerp(vel.x, 0.0F, lerp_t);
-    vel.z = std::lerp(vel.z, 0.0F, lerp_t);
-
-    // Jump impulse
-    if (input_jump_ && grounded)
-      vel.y = 6.0F;
+    float t = 1.0F - std::exp(-drag * delta);
+    vel.x = std::lerp(vel.x, 0.0F, t);
+    vel.z = std::lerp(vel.z, 0.0F, t);
 
     character_->set_velocity(vel);
-    character_->update_gravity(delta);
+    character_->update(delta);
 
     const glm::vec3 char_pos = character_->position();
     scene_.instance(character_instance_).model = glm::translate(glm::mat4(1.0F), char_pos);
