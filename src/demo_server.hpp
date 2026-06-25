@@ -128,29 +128,31 @@ private:
 
     physics_.step(delta);
 
-    // Additive character movement — never override, only add or drag
+    // Additive character movement
     glm::vec3 vel = character_->linear_velocity();
     const bool grounded = character_->is_on_ground();
 
-    // Add input acceleration (not velocity override)
-    constexpr float k_accel = 30.0F;  // m/s²
+    // Gravity — accumulate ourselves (CharacterVirtual::Update doesn't accumulate)
+    vel.y += -9.81F * delta;
+
+    // Input acceleration
+    constexpr float k_accel = 30.0F;
     vel.x += input_forward_ * k_accel * delta;
     vel.z += input_right_ * k_accel * delta;
 
-    // Drag: lerp horizontal velocity toward 0
-    float drag = grounded ? 8.0F : 2.0F;  // strong on ground, light in air
+    // Drag: lerp horizontal toward 0 (strong on ground, light in air)
+    float drag = grounded ? 8.0F : 2.0F;
     float lerp_t = 1.0F - std::exp(-drag * delta);
     vel.x = std::lerp(vel.x, 0.0F, lerp_t);
     vel.z = std::lerp(vel.z, 0.0F, lerp_t);
 
-    // Jump impulse (only override for jump)
+    // Jump impulse
     if (input_jump_ && grounded)
       vel.y = 6.0F;
 
     character_->set_velocity(vel);
-    character_->update(delta);
+    character_->update_gravity(delta);
 
-    // Sync visual
     const glm::vec3 char_pos = character_->position();
     scene_.instance(character_instance_).model = glm::translate(glm::mat4(1.0F), char_pos);
 
