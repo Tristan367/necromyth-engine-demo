@@ -28,7 +28,7 @@ public:
       physics_bodies_.push_back({
           physics_.create_box({0.5F, 0.5F, 0.5F}, pos,
                               JPH::EMotionType::Dynamic, engine::physics::Layers::kMoving,
-                              glm::quat(1.0F, 0.0F, 0.0F, 0.0F), 1.0F),
+                              glm::quat(1.0F, 0.0F, 0.0F, 0.0F), 1.0F, 0.7F),
           inst_idx});
     }
 
