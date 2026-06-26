@@ -77,10 +77,6 @@ public:
       }
     }
 
-    physics_.step(delta);
-
-    character_->update_ground_velocity();
-
     glm::vec3 vel = character_->linear_velocity();
     const bool grounded = character_->is_on_ground();
 
@@ -101,6 +97,8 @@ public:
 
     character_->set_velocity(vel);
     character_->update(delta);
+
+    physics_.step(delta);
 
     const glm::vec3 char_pos = character_->position();
     scene_.instance(character_instance_).model = glm::translate(glm::mat4(1.0F), char_pos);
