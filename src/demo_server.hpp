@@ -34,7 +34,6 @@ public:
 
     character_ = std::make_unique<engine::physics::Character>(physics_, glm::vec3{0.0F, 20.0F, 0.0F},
                                                                 0.5F, 0.8F);
-    character_->set_max_strength(0.0F);
 
     std::cout << "Physics: " << physics_bodies_.size() << " cubes, "
               << (trimesh_source && !trimesh_source->vertices.empty() ? "trimesh ground" : "ground plane")
@@ -77,6 +76,7 @@ public:
       }
     }
 
+    // Compute character velocity from previous frame's state
     glm::vec3 vel = character_->linear_velocity();
     const bool grounded = character_->is_on_ground();
 
@@ -84,15 +84,10 @@ public:
     vel.x += input_forward * accel * delta;
     vel.z += input_right * accel * delta;
 
-    if (grounded) {
+    if (grounded)
       vel.y = input_jump ? 6.0F : 0.0F;
-    } else {
-      if (input_forward != 0.0F || input_right != 0.0F) {
-        vel.x = input_forward * 0.5F;
-        vel.z = input_right * 0.5F;
-      }
+    else
       vel.y += -9.81F * delta;
-    }
 
     float drag = grounded ? 8.0F : 0.5F;
     float t = 1.0F - std::exp(-drag * delta);
