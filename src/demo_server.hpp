@@ -86,8 +86,6 @@ public:
 
     if (grounded)
       vel.y = input_jump ? 6.0F : 0.0F;
-    else
-      vel.y += -9.81F * delta;
 
     float drag = grounded ? 8.0F : 0.5F;
     float t = 1.0F - std::exp(-drag * delta);
