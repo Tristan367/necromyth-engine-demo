@@ -84,11 +84,15 @@ public:
     vel.x += input_forward * accel * delta;
     vel.z += input_right * accel * delta;
 
-    if (input_jump && grounded)
-      vel.y = 6.0F;
-
-    if (!grounded)
+    if (grounded) {
+      vel.y = input_jump ? 6.0F : 0.0F;
+    } else {
+      if (input_forward != 0.0F || input_right != 0.0F) {
+        vel.x = input_forward * 0.5F;
+        vel.z = input_right * 0.5F;
+      }
       vel.y += -9.81F * delta;
+    }
 
     float drag = grounded ? 8.0F : 0.5F;
     float t = 1.0F - std::exp(-drag * delta);
