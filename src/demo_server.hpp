@@ -34,6 +34,7 @@ public:
 
     character_ = std::make_unique<engine::physics::Character>(physics_, glm::vec3{0.0F, 20.0F, 0.0F},
                                                                 0.5F, 0.8F);
+    character_->set_max_strength(0.0F);
 
     std::cout << "Physics: " << physics_bodies_.size() << " cubes, "
               << (trimesh_source && !trimesh_source->vertices.empty() ? "trimesh ground" : "ground plane")
