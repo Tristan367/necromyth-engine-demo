@@ -103,7 +103,8 @@ void DemoApp::run() {
           !impl.debug_ui.wants_keyboard())
         toggle_demo_animation(impl.scene);
 
-      if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_TAB) {
+      if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_TAB &&
+          !impl.debug_ui.wants_keyboard()) {
         impl.character_mode = !impl.character_mode;
         impl.fly_camera.set_capture(!impl.character_mode);
         std::cout << (impl.character_mode ? "Character mode\n" : "Fly mode\n");
