@@ -103,9 +103,9 @@ void DemoApp::run() {
           !impl.debug_ui.wants_keyboard())
         toggle_demo_animation(impl.scene);
 
-      if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_TAB &&
-          !impl.debug_ui.wants_keyboard()) {
+      if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_TAB) {
         impl.character_mode = !impl.character_mode;
+        impl.fly_camera.set_capture(!impl.character_mode);
         std::cout << (impl.character_mode ? "Character mode\n" : "Fly mode\n");
       }
 
@@ -151,6 +151,9 @@ void DemoApp::run() {
     // Fixed-timestep physics ticks
     impl.physics_accumulator_ += delta_seconds;
     while (impl.physics_accumulator_ >= k_fixed_dt) {
+      impl.server.tick(k_fixed_dt, input_fwd, input_rgt, jump);
+      update_demo_scene(impl.scene);
+      impl.physics_accumulator_ -= k_fixed_dt;
       impl.server.tick(k_fixed_dt, input_fwd, input_rgt, jump);
       update_demo_scene(impl.scene);
       impl.physics_accumulator_ -= k_fixed_dt;
