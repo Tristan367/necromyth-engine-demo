@@ -88,4 +88,69 @@ namespace app {
   return mesh;
 }
 
+[[nodiscard]] inline auto make_capsule_mesh(float radius, float half_height, int segments = 16, int rings = 8) -> engine::MeshSource {
+  engine::MeshSource mesh;
+
+  auto vert = [&](float x, float y, float z, float nx, float ny, float nz) {
+    engine::MeshVertex v{};
+    v.pos[0] = x; v.pos[1] = y; v.pos[2] = z;
+    v.normal[0] = nx; v.normal[1] = ny; v.normal[2] = nz;
+    v.color[0] = 1.0F; v.color[1] = 1.0F; v.color[2] = 1.0F;
+    return v;
+  };
+
+  const float bottom = -half_height - radius;
+  const float top = half_height + radius;
+  const float two_pi = 2.0F * 3.14159265F;
+  const int total_rings = rings * 2 + 2; // rings for each hemisphere + 2 for cylinder ends
+
+  // Generate vertex rings from bottom to top
+  for (int ring = 0; ring <= total_rings; ++ring) {
+    const float y = bottom + (top - bottom) * static_cast<float>(ring) / static_cast<float>(total_rings);
+
+    float r, ny;
+    if (y < -half_height) {
+      const float dy = y + half_height;
+      r = std::sqrt(radius * radius - dy * dy);
+      ny = -dy / radius; // normal Y based on sphere center
+    } else if (y > half_height) {
+      const float dy = y - half_height;
+      r = std::sqrt(radius * radius - dy * dy);
+      ny = dy / radius;
+    } else {
+      r = radius;
+      ny = 0.0F;
+    }
+
+    for (int seg = 0; seg < segments; ++seg) {
+      const float theta = two_pi * static_cast<float>(seg) / static_cast<float>(segments);
+      const float x = r * std::cos(theta);
+      const float z = r * std::sin(theta);
+      const float nx = r > 0.001F ? x / r : 0.0F;
+      const float nz = r > 0.001F ? z / r : 0.0F;
+      mesh.vertices.push_back(vert(x, y, z, nx, ny, nz));
+    }
+  }
+
+  // Generate indices (quads between rings)
+  for (int ring = 0; ring < total_rings; ++ring) {
+    const int base = ring * segments;
+    const int next_base = (ring + 1) * segments;
+    for (int seg = 0; seg < segments; ++seg) {
+      const int curr = base + seg;
+      const int next_seg = base + (seg + 1) % segments;
+      const int next_curr = next_base + seg;
+      const int next_next = next_base + (seg + 1) % segments;
+      mesh.indices.push_back(curr);
+      mesh.indices.push_back(next_curr);
+      mesh.indices.push_back(next_next);
+      mesh.indices.push_back(curr);
+      mesh.indices.push_back(next_next);
+      mesh.indices.push_back(next_seg);
+    }
+  }
+
+  return mesh;
+}
+
 } // namespace app

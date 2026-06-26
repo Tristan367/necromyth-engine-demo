@@ -218,9 +218,9 @@ void populate_demo_scene(engine::Scene &scene) {
   add_physics_cube_instances(scene, physics_instances);
   cube_instance_indices = physics_instances;
 
-  // Character visual (box that will follow character position)
+  // Character visual (capsule that will follow character position)
   {
-    const engine::MeshSource vis_mesh = app::make_cube_mesh(0.45F);
+    const engine::MeshSource vis_mesh = app::make_capsule_mesh(0.5F, 0.4F, 16, 6);
     const std::uint32_t vis_mesh_idx = scene.add_mesh(vis_mesh);
     character_sphere_index = scene.add_instance({
         .mesh_index = vis_mesh_idx,
