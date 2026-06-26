@@ -14,10 +14,13 @@
 class DemoServer {
 public:
   explicit DemoServer(engine::Scene &scene, const std::vector<std::uint32_t> &cube_instances,
-                      std::uint32_t character_instance)
+                      std::uint32_t character_instance, const engine::MeshSource *trimesh_source)
       : scene_{scene}, physics_(65536), character_instance_{character_instance} {
-    (void)physics_.create_box({25.0F, 0.2F, 25.0F}, {0.0F, -0.2F, 0.0F},
-                        JPH::EMotionType::Static, engine::physics::Layers::kNonMoving);
+    if (trimesh_source && !trimesh_source->vertices.empty())
+      (void)physics_.create_static_mesh(*trimesh_source, glm::vec3(0.0F));
+    else
+      (void)physics_.create_box({25.0F, 0.2F, 25.0F}, {0.0F, -0.2F, 0.0F},
+                          JPH::EMotionType::Static, engine::physics::Layers::kNonMoving);
 
     for (std::uint32_t inst_idx : cube_instances) {
       const engine::MeshInstance &inst = scene_.instances()[inst_idx];
@@ -29,10 +32,12 @@ public:
           inst_idx});
     }
 
-    character_ = std::make_unique<engine::physics::Character>(physics_, glm::vec3{0.0F, 5.0F, 0.0F},
+    character_ = std::make_unique<engine::physics::Character>(physics_, glm::vec3{0.0F, 20.0F, 0.0F},
                                                                 0.5F, 0.8F);
 
-    std::cout << "Physics: " << physics_bodies_.size() << " cubes, ground plane\n";
+    std::cout << "Physics: " << physics_bodies_.size() << " cubes, "
+              << (trimesh_source && !trimesh_source->vertices.empty() ? "trimesh ground" : "ground plane")
+              << "\nCharacter at y=20\n";
   }
 
   [[nodiscard]] auto character_position() const -> glm::vec3 {
@@ -114,8 +119,8 @@ private:
   };
 
   struct RenderState {
-    glm::vec3 prev{0.0F, 5.0F, 0.0F};
-    glm::vec3 curr{0.0F, 5.0F, 0.0F};
+    glm::vec3 prev{0.0F, 20.0F, 0.0F};
+    glm::vec3 curr{0.0F, 20.0F, 0.0F};
     std::uint64_t write_time_ms{};
   };
 
