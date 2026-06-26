@@ -34,6 +34,7 @@ public:
 
     character_ = std::make_unique<engine::physics::Character>(physics_, glm::vec3{0.0F, 20.0F, 0.0F},
                                                                 0.5F, 0.8F);
+    character_->set_max_strength(0.0F);
 
     std::cout << "Physics: " << physics_bodies_.size() << " cubes, "
               << (trimesh_source && !trimesh_source->vertices.empty() ? "trimesh ground" : "ground plane")
@@ -47,7 +48,6 @@ public:
   }
 
   void tick(float delta, float input_forward, float input_right, bool input_jump) {
-    // Animation update
     for (engine::MeshInstance &instance : scene_.instances()) {
       if (instance.skin_index == engine::k_invalid_skin_index)
         continue;
@@ -76,25 +76,35 @@ public:
       }
     }
 
-    // Compute character velocity from previous frame's state
-    glm::vec3 vel = character_->linear_velocity();
+    // Jolt sample velocity formula (CharacterVirtualTest::HandleInput)
+    character_->update_ground_velocity();
+
     const bool grounded = character_->is_on_ground();
+    const glm::vec3 ground_vel = character_->ground_velocity();
+    const glm::vec3 current_vel = character_->linear_velocity();
+    const glm::vec3 vert_only(0.0F, current_vel.y, 0.0F);
 
-    const float accel = grounded ? 30.0F : 1.5F;
-    vel.x += input_forward * accel * delta;
-    vel.z += input_right * accel * delta;
+    glm::vec3 new_vel = grounded ? ground_vel : vert_only;
+    new_vel.y += -9.81F * delta;
 
-    if (grounded)
-      vel.y = input_jump ? 6.0F : 0.0F;
-    else
-      vel.y += -9.81F * delta;
+    const glm::vec3 input(input_forward, 0.0F, input_right);
+    if (grounded || input_forward != 0.0F || input_right != 0.0F) {
+      new_vel.x += input.x * delta * (grounded ? 30.0F : 1.5F);
+      new_vel.z += input.z * delta * (grounded ? 30.0F : 1.5F);
+    } else {
+      new_vel.x += current_vel.x;
+      new_vel.z += current_vel.z;
+    }
+
+    if (input_jump && grounded)
+      new_vel.y = 6.0F;
 
     float drag = grounded ? 8.0F : 0.5F;
     float t = 1.0F - std::exp(-drag * delta);
-    vel.x = std::lerp(vel.x, 0.0F, t);
-    vel.z = std::lerp(vel.z, 0.0F, t);
+    new_vel.x = std::lerp(new_vel.x, 0.0F, t);
+    new_vel.z = std::lerp(new_vel.z, 0.0F, t);
 
-    character_->set_velocity(vel);
+    character_->set_velocity(new_vel);
     character_->update(delta);
 
     physics_.step(delta);
