@@ -97,18 +97,20 @@ void DemoApp::run() {
 
     SDL_Event event{};
     while (SDL_PollEvent(&event)) {
-      impl.input.process_event(event, impl.debug_ui, impl.fly_camera);
-
-      if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_E &&
-          !impl.debug_ui.wants_keyboard())
-        toggle_demo_animation(impl.scene);
-
+      // Tab: toggle character mode (before InputRouter consumes the key)
       if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_TAB &&
           !impl.debug_ui.wants_keyboard()) {
         impl.character_mode = !impl.character_mode;
         impl.fly_camera.set_capture(!impl.character_mode);
         std::cout << (impl.character_mode ? "Character mode\n" : "Fly mode\n");
+        continue;
       }
+
+      impl.input.process_event(event, impl.debug_ui, impl.fly_camera);
+
+      if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_E &&
+          !impl.debug_ui.wants_keyboard())
+        toggle_demo_animation(impl.scene);
 
       if (event.type == SDL_EVENT_WINDOW_RESIZED ||
           event.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED)
