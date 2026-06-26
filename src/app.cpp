@@ -149,15 +149,14 @@ void DemoApp::run() {
       input_rgt = world_vel.z;
     }
 
-    // Fixed-timestep physics ticks
+    // Fixed-timestep physics ticks (max 2 per frame to prevent burst jitter)
     impl.physics_accumulator_ += delta_seconds;
-    while (impl.physics_accumulator_ >= k_fixed_dt) {
+    int ticks = 0;
+    while (impl.physics_accumulator_ >= k_fixed_dt && ticks < 2) {
       impl.server.tick(k_fixed_dt, input_fwd, input_rgt, jump);
       update_demo_scene(impl.scene);
       impl.physics_accumulator_ -= k_fixed_dt;
-      impl.server.tick(k_fixed_dt, input_fwd, input_rgt, jump);
-      update_demo_scene(impl.scene);
-      impl.physics_accumulator_ -= k_fixed_dt;
+      ++ticks;
     }
 
     // Camera follows character (after physics, before render)

@@ -85,24 +85,34 @@ public:
     const glm::vec3 vert_only(0.0F, current_vel.y, 0.0F);
 
     glm::vec3 new_vel = grounded ? ground_vel : vert_only;
-    new_vel.y += -9.81F * delta;
+    new_vel.y += -9.81F * delta;  // always
 
-    const glm::vec3 input(input_forward, 0.0F, input_right);
-    if (grounded || input_forward != 0.0F || input_right != 0.0F) {
-      new_vel.x += input.x * delta * (grounded ? 30.0F : 1.5F);
-      new_vel.z += input.z * delta * (grounded ? 30.0F : 1.5F);
+    // Input smoothing (0.25 raw + 0.75 previous — Jolt sample inertia)
+    smoothed_input_.x = 0.25F * input_forward * 5.0F + 0.75F * smoothed_input_.x;
+    smoothed_input_.z = 0.25F * input_right * 5.0F + 0.75F * smoothed_input_.z;
+
+    const bool player_moving = input_forward != 0.0F || input_right != 0.0F;
+    if (grounded || player_moving) {
+      new_vel.x += smoothed_input_.x;
+      new_vel.z += smoothed_input_.z;
     } else {
-      new_vel.x += current_vel.x;
+      new_vel.x += current_vel.x;  // preserve horizontal in air when idle
       new_vel.z += current_vel.z;
     }
 
     if (input_jump && grounded)
       new_vel.y = 6.0F;
 
-    float drag = grounded ? 8.0F : 0.5F;
-    float t = 1.0F - std::exp(-drag * delta);
-    new_vel.x = std::lerp(new_vel.x, 0.0F, t);
-    new_vel.z = std::lerp(new_vel.z, 0.0F, t);
+    // Drag only when actively moving on ground, or always in air
+    if (grounded && player_moving) {
+      float t = 1.0F - std::exp(-8.0F * delta);
+      new_vel.x = std::lerp(new_vel.x, 0.0F, t);
+      new_vel.z = std::lerp(new_vel.z, 0.0F, t);
+    } else if (!grounded) {
+      float t = 1.0F - std::exp(-0.5F * delta);
+      new_vel.x = std::lerp(new_vel.x, 0.0F, t);
+      new_vel.z = std::lerp(new_vel.z, 0.0F, t);
+    }
 
     character_->set_velocity(new_vel);
     character_->update(delta);
@@ -138,4 +148,5 @@ private:
   std::uint32_t character_instance_{};
   RenderState render_state_;
   std::vector<PhysicsEntry> physics_bodies_;
+  glm::vec3 smoothed_input_{0, 0, 0};
 };
