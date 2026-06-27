@@ -176,26 +176,16 @@ inline auto make_cube_mesh(float half = 0.5F) -> engine::MeshSource {
     const int base = ring * segments;
     const int next_base = (ring + 1) * segments;
     for (int seg = 0; seg < segments; ++seg) {
-      const int curr = base + seg;
-      const int next_seg = base + (seg + 1) % segments;
-      const int next_curr = next_base + seg;
-      const int next_next = next_base + (seg + 1) % segments;
-  for (int ring = 0; ring < total_rings; ++ring) {
-    const int base = ring * segments;
-    const int next_base = (ring + 1) * segments;
-    for (int seg = 0; seg < segments; ++seg) {
-      const int curr = base + seg;
-      const int next_seg = base + (seg + 1) % segments;
-      const int next_curr = next_base + seg;
-      const int next_next = next_base + (seg + 1) % segments;
-      mesh.indices.push_back(curr);
-      mesh.indices.push_back(next_next);
-      mesh.indices.push_back(next_curr);
-      mesh.indices.push_back(curr);
-      mesh.indices.push_back(next_seg);
-      mesh.indices.push_back(next_next);
-    }
-  }
+      const int bl = base + seg;                       // bottom-left
+      const int br = base + (seg + 1) % segments;       // bottom-right
+      const int tl = next_base + seg;                   // top-left
+      const int tr = next_base + (seg + 1) % segments;  // top-right
+      mesh.indices.push_back(bl);
+      mesh.indices.push_back(tl);
+      mesh.indices.push_back(tr);
+      mesh.indices.push_back(bl);
+      mesh.indices.push_back(tr);
+      mesh.indices.push_back(br);
     }
   }
 

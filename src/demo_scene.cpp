@@ -311,10 +311,10 @@ void add_physics_test_objects(engine::Scene &scene) {
     const float w = c.r, v = c.g, b = c.b;
 
     const int shape = std::rand() % 6;
-    const float s = 0.1F + static_cast<float>(std::rand() % 1000) * 0.002F;  // 0.1 - 2.1
-    const float sx = s * (0.5F + static_cast<float>(std::rand() % 300) * 0.003F);
-    const float sy = s * (0.5F + static_cast<float>(std::rand() % 300) * 0.003F);
-    const float sz = s * (0.5F + static_cast<float>(std::rand() % 300) * 0.003F);
+    const float s = 0.05F + static_cast<float>(std::rand() % 1000) * 0.001F;  // 0.05 - 1.05
+    const float sx = s * (0.3F + static_cast<float>(std::rand() % 300) * 0.003F);
+    const float sy = s * (0.3F + static_cast<float>(std::rand() % 300) * 0.003F);
+    const float sz = s * (0.3F + static_cast<float>(std::rand() % 300) * 0.003F);
     const float x = static_cast<float>(std::rand() % 1000) * 0.02F - 10.0F;
     const float y = 20.0F + static_cast<float>(std::rand() % 2000) * 0.02F;
     const float z = static_cast<float>(std::rand() % 1000) * 0.02F - 10.0F;
