@@ -16,6 +16,21 @@
 #include <cstring>
 #include <vector>
 
+#include <atomic>
+
+namespace {
+
+struct BatchImpl final : public JPH::RefTargetVirtual {
+  JPH_OVERRIDE_NEW_DELETE
+  JPH::Array<JPH::DebugRenderer::Triangle> triangles;
+  void AddRef() override { ++ref_; }
+  void Release() override { if (--ref_ == 0) delete this; }
+private:
+  std::atomic<JPH::uint32> ref_ = 0;
+};
+
+} // namespace
+
 class JoltDebugRenderer : public JPH::DebugRenderer {
 public:
   JoltDebugRenderer() { Initialize(); }
@@ -24,18 +39,57 @@ public:
   struct Line { float from[3], to[3]; uint32_t color; };
   [[nodiscard]] auto lines() const -> const std::vector<Line> & { return lines_; }
 
-  // The only method Jolt actually calls for wireframe drawing
   void DrawLine(JPH::RVec3Arg f, JPH::RVec3Arg t, JPH::ColorArg c) override {
     lines_.push_back({{f.GetX(), f.GetY(), f.GetZ()}, {t.GetX(), t.GetY(), t.GetZ()}, c.GetUInt32()});
   }
 
-  // Stubs — not used for wireframe
-  void DrawTriangle(JPH::RVec3Arg, JPH::RVec3Arg, JPH::RVec3Arg, JPH::ColorArg, ECastShadow) override {}
+  void DrawTriangle(JPH::RVec3Arg v1, JPH::RVec3Arg v2, JPH::RVec3Arg v3,
+                    JPH::ColorArg c, ECastShadow) override {
+    DrawLine(v1, v2, c);
+    DrawLine(v2, v3, c);
+    DrawLine(v3, v1, c);
+  }
+
   void DrawText3D(JPH::RVec3Arg, const std::string_view &, JPH::ColorArg, float) override {}
-  Batch CreateTriangleBatch(const Triangle *, int) override { return nullptr; }
-  Batch CreateTriangleBatch(const Vertex *, int, const std::uint32_t *, int) override { return nullptr; }
-  void DrawGeometry(JPH::RMat44Arg, const JPH::AABox &, float, JPH::ColorArg, const GeometryRef &,
-                    ECullMode, ECastShadow, EDrawMode) override {}
+
+  Batch CreateTriangleBatch(const Triangle *triangles, int count) override {
+    auto *b = new BatchImpl;
+    if (triangles && count > 0)
+      b->triangles.assign(triangles, triangles + count);
+    return b;
+  }
+
+  Batch CreateTriangleBatch(const Vertex *verts, int vcount,
+                            const std::uint32_t *indices, int icount) override {
+    auto *b = new BatchImpl;
+    if (verts && vcount > 0 && indices && icount > 0) {
+      b->triangles.resize(icount / 3);
+      for (size_t t = 0; t < b->triangles.size(); ++t) {
+        auto &tri = b->triangles[t];
+        tri.mV[0] = verts[indices[t * 3 + 0]];
+        tri.mV[1] = verts[indices[t * 3 + 1]];
+        tri.mV[2] = verts[indices[t * 3 + 2]];
+      }
+    }
+    return b;
+  }
+
+  void DrawGeometry(JPH::RMat44Arg m, const JPH::AABox &, float,
+                    JPH::ColorArg color, const GeometryRef &geo,
+                    ECullMode, ECastShadow, EDrawMode draw_mode) override {
+    if (draw_mode != EDrawMode::Wireframe) return;
+    const LOD &lod = geo->mLODs.front();
+    auto *batch = static_cast<const BatchImpl *>(lod.mTriangleBatch.GetPtr());
+    if (!batch) return;
+    for (const auto &tri : batch->triangles) {
+      JPH::RVec3 v0 = m * JPH::Vec3(tri.mV[0].mPosition);
+      JPH::RVec3 v1 = m * JPH::Vec3(tri.mV[1].mPosition);
+      JPH::RVec3 v2 = m * JPH::Vec3(tri.mV[2].mPosition);
+      DrawLine(v0, v1, color);
+      DrawLine(v1, v2, color);
+      DrawLine(v2, v0, color);
+    }
+  }
 
 private:
   std::vector<Line> lines_;
