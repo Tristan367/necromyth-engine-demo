@@ -163,7 +163,8 @@ void DemoApp::run() {
 
     // Camera follows character (after physics, before render)
     if (impl.character_mode) {
-      const glm::vec3 char_pos = impl.server.character_position();
+      const float interp_alpha = impl.physics_accumulator_ / k_fixed_dt;
+      const glm::vec3 char_pos = impl.server.character_position(interp_alpha);
       const glm::vec3 look_fwd = impl.fly_camera.forward();
       impl.scene.camera().look_at(
           glm::vec3(char_pos.x, char_pos.y + 1.5F, char_pos.z),

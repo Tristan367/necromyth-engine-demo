@@ -4,8 +4,6 @@
 #include "scene/animation_utils.hpp"
 #include "scene/scene.hpp"
 
-#include <SDL3/SDL_timer.h>
-
 #include <cmath>
 #include <cstdint>
 #include <iostream>
@@ -34,16 +32,14 @@ public:
 
     character_ = std::make_unique<engine::physics::Character>(physics_, glm::vec3{0.0F, 20.0F, 0.0F},
                                                                 0.5F, 0.8F);
-    character_->set_max_strength(0.0F);
 
     std::cout << "Physics: " << physics_bodies_.size() << " cubes, "
               << (trimesh_source && !trimesh_source->vertices.empty() ? "trimesh ground" : "ground plane")
               << "\nCharacter at y=20\n";
   }
 
-  [[nodiscard]] auto character_position() const -> glm::vec3 {
-    const float elapsed = static_cast<float>(SDL_GetTicks() - render_state_.write_time_ms);
-    const float fraction = std::clamp(elapsed / (1000.0F / 60.0F), 0.0F, 1.0F);
+  [[nodiscard]] auto character_position(float interp_alpha = 0.0F) const -> glm::vec3 {
+    const float fraction = std::clamp(interp_alpha, 0.0F, 1.0F);
     return glm::mix(render_state_.prev, render_state_.curr, fraction);
   }
 
@@ -92,6 +88,7 @@ public:
     smoothed_input_.z = 0.25F * input_right * 5.0F + 0.75F * smoothed_input_.z;
 
     const bool player_moving = input_forward != 0.0F || input_right != 0.0F;
+    character_->set_allow_sliding(player_moving || !grounded);
     if (grounded || player_moving) {
       new_vel.x += smoothed_input_.x;
       new_vel.z += smoothed_input_.z;
