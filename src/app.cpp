@@ -67,14 +67,20 @@ struct DemoApp::Impl {
 
     vulkan.set_frame_overlay([this](const engine::FrameOverlayContext &context) {
       debug_ui.record_overlay(context);
-      if (debug_lines_ && server.debug_active())
-        ; // debug_lines_->draw(context.command_buffer, vulkan.frame_set_obj(context.frame_index), server.debug_lines(), context.extent);
+      if (debug_lines_ && server.debug_active()) {
+        // Test crosshair (red=Y, green=X, blue=Z) at origin
+        static std::vector<JoltDebugRenderer::Line> test = {{
+            {{-5,0,0},{5,0,0}, 0xFF0000FF}, {{0,-5,0},{0,5,0}, 0x00FF00FF}, {{0,0,-5},{0,0,5}, 0x0000FFFF}}};
+        debug_lines_->draw(context.command_buffer, vulkan.frame_set_obj(context.frame_index), test, context.extent);
+        // Jolt wireframes
+        debug_lines_->draw(context.command_buffer, vulkan.frame_set_obj(context.frame_index), server.debug_lines(), context.extent);
+      }
     });
 
-    // Debug line renderer — pipeline creation crashes; needs debug before enabling
-    // debug_lines_ = std::make_unique<DebugLineRenderer>(
-    //     vulkan.device_ref(), vulkan.mem_props(), vulkan.color_fmt(), vulkan.depth_fmt(),
-    //     ENGINE_DEBUG_LINE_SPIRV, vulkan.frame_layout_obj(), vulkan.sample_count());
+    // Debug line renderer (Jolt wireframe overlay)
+    debug_lines_ = std::make_unique<DebugLineRenderer>(
+        vulkan.device_ref(), vulkan.mem_props(), vulkan.color_fmt(), vulkan.depth_fmt(),
+        ENGINE_DEBUG_LINE_SPIRV, vulkan.frame_layout_obj(), vulkan.sample_count());
 
     std::cout << "Selected GPU: " << vulkan.gpu_name();
     if (config.gpu_device_index)

@@ -67,8 +67,8 @@ public:
     const vk::PipelineRasterizationStateCreateInfo rs{.polygonMode = vk::PolygonMode::eFill,
         .cullMode = vk::CullModeFlagBits::eNone, .frontFace = vk::FrontFace::eCounterClockwise, .lineWidth = 1.0f};
     const vk::PipelineMultisampleStateCreateInfo ms{.rasterizationSamples = samples};
-    const vk::PipelineDepthStencilStateCreateInfo ds{.depthTestEnable = VK_TRUE,
-        .depthWriteEnable = VK_FALSE, .depthCompareOp = vk::CompareOp::eLessOrEqual};
+    const vk::PipelineDepthStencilStateCreateInfo ds{.depthTestEnable = VK_FALSE,
+        .depthWriteEnable = VK_FALSE};
     const vk::PipelineColorBlendAttachmentState bl{.colorWriteMask =
         vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
         vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA};
@@ -86,10 +86,11 @@ public:
 
     vk::raii::PipelineCache cache(dev, {});
     vk::StructureChain<vk::GraphicsPipelineCreateInfo, vk::PipelineRenderingCreateInfo> chain{
-      {.stageCount=2, .pStages=stages, .pVertexInputState=&vi,        .pInputAssemblyState=&ia, .pViewportState=&vp,
+      {.stageCount=2, .pStages=stages, .pVertexInputState=&vi, .pInputAssemblyState=&ia, .pViewportState=&vp,
        .pRasterizationState=&rs, .pMultisampleState=&ms, .pDepthStencilState=&ds,
+       .pColorBlendState=&cb, .pDynamicState=&dyn,
        .layout=*pip_layout_, .renderPass=nullptr},
-      {.colorAttachmentCount=1, .pColorAttachmentFormats=&c_fmt, .depthAttachmentFormat=d_fmt}};
+      {.colorAttachmentCount=1, .pColorAttachmentFormats=&c_fmt, .depthAttachmentFormat=vk::Format::eUndefined}};
     pip_ = vk::raii::Pipeline(dev, cache, chain.get<vk::GraphicsPipelineCreateInfo>());
   }
 
