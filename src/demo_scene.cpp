@@ -303,6 +303,9 @@ void add_physics_test_objects(engine::Scene &scene) {
   };
 
   std::srand(42);
+
+  const std::uint32_t white_tex = scene.add_texture(asset_path("/textures/white.png"));
+
   for (int i = 0; i < 50; ++i) {
     auto &c = colors[i % 20];
     const float w = c.r, v = c.g, b = c.b;
@@ -336,7 +339,7 @@ void add_physics_test_objects(engine::Scene &scene) {
     const std::uint32_t mesh_idx = scene.add_mesh(mesh);
     const std::uint32_t inst_idx = scene.add_instance({
         .mesh_index = mesh_idx,
-        .texture_index = 0,
+        .texture_index = white_tex,
         .model = glm::translate(glm::mat4(1.0F), glm::vec3{x, y, z}),
         .layer = engine::RenderLayer::Opaque,
     });
