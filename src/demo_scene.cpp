@@ -289,18 +289,40 @@ void toggle_demo_animation(engine::Scene &scene) {
 }
 
 void add_physics_cube_instances(engine::Scene &scene, std::vector<std::uint32_t> &out_indices) {
-  const engine::MeshSource cube_mesh = app::make_cube_mesh(0.5F);
-  const std::array positions{
-      glm::vec3{0.0F, 23.0F, 0.0F},
-      glm::vec3{2.0F, 27.0F, 2.0F},
-      glm::vec3{-2.0F, 31.0F, -2.0F},
+  struct ObjectDef {
+    engine::MeshSource (*maker)();
+    glm::vec3 pos;
   };
-  for (const glm::vec3 &pos : positions) {
-    const std::uint32_t mesh_idx = scene.add_mesh(cube_mesh);
+
+  const ObjectDef objects[] = {
+      {[] { return app::make_box_mesh(0.4F, 0.3F, 0.5F); },            { 0.0F, 25.0F,  0.0F}},
+      {[] { return app::make_box_mesh(0.5F, 0.5F, 0.5F); },            { 1.5F, 28.0F,  0.5F}},
+      {[] { return app::make_box_mesh(0.2F, 0.8F, 0.3F); },            {-1.0F, 30.0F, -1.0F}},
+      {[] { return app::make_box_mesh(0.6F, 0.15F, 0.6F); },            { 2.0F, 32.0F, -1.5F}},
+      {[] { return app::make_sphere_mesh(0.4F); },                      {-2.0F, 26.0F,  1.0F}},
+      {[] { return app::make_sphere_mesh(0.25F); },                     { 3.0F, 29.0F,  2.0F}},
+      {[] { return app::make_sphere_mesh(0.5F); },                      {-3.0F, 33.0F, -2.0F}},
+      {[] { return app::make_capsule_mesh(0.3F, 0.4F); },              { 0.0F, 35.0F,  3.0F}},
+      {[] { return app::make_capsule_mesh(0.2F, 0.6F); },              {-1.5F, 27.0F, -3.0F}},
+      {[] { return app::make_capsule_mesh(0.25F, 0.25F); },            { 1.0F, 31.0F, -2.5F}},
+      {[] { return app::make_capsule_mesh(0.35F, 0.15F, 0.3F); },      {-2.5F, 34.0F,  2.5F}},
+      {[] { return app::make_capsule_mesh(0.15F, 0.35F, 0.35F); },     { 2.5F, 30.0F,  3.5F}},
+      {[] { return app::make_cylinder_mesh(0.3F, 0.3F, 0.4F); },      { 0.5F, 33.0F, -3.5F}},
+      {[] { return app::make_cylinder_mesh(0.2F, 0.2F, 0.7F); },      {-3.5F, 28.0F,  0.0F}},
+      {[] { return app::make_cylinder_mesh(0.35F, 0.15F, 0.5F); },     { 3.5F, 32.0F, -1.0F}},
+      {[] { return app::make_cylinder_mesh(0.15F, 0.4F, 0.3F); },      { 1.5F, 29.0F,  4.0F}},
+      {[] { return app::make_box_mesh(0.3F, 0.3F, 0.3F); },            {-1.0F, 36.0F,  1.5F}},
+      {[] { return app::make_sphere_mesh(0.35F); },                     { 0.0F, 38.0F, -2.0F}},
+      {[] { return app::make_capsule_mesh(0.4F, 0.2F); },              { 4.0F, 34.0F,  1.0F}},
+      {[] { return app::make_cylinder_mesh(0.25F, 0.25F, 0.25F); },   {-4.0F, 31.0F, -0.5F}},
+  };
+
+  for (const ObjectDef &def : objects) {
+    const std::uint32_t mesh_idx = scene.add_mesh(def.maker());
     out_indices.push_back(scene.add_instance({
         .mesh_index = mesh_idx,
         .texture_index = 0,
-        .model = glm::translate(glm::mat4(1.0F), pos),
+        .model = glm::translate(glm::mat4(1.0F), def.pos),
         .layer = engine::RenderLayer::Opaque,
       }));
   }

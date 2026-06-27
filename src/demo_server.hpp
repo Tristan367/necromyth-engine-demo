@@ -11,7 +11,7 @@
 
 class DemoServer {
 public:
-  explicit DemoServer(engine::Scene &scene, const std::vector<std::uint32_t> &cube_instances,
+  explicit DemoServer(engine::Scene &scene, const std::vector<std::uint32_t> &obj_instances,
                       std::uint32_t character_instance, const engine::MeshSource *trimesh_source)
       : scene_{scene}, physics_(65536), character_instance_{character_instance} {
     if (trimesh_source && !trimesh_source->vertices.empty())
@@ -20,7 +20,7 @@ public:
       (void)physics_.create_box({25.0F, 0.2F, 25.0F}, {0.0F, -0.2F, 0.0F},
                           JPH::EMotionType::Static, engine::physics::Layers::kNonMoving);
 
-    for (std::uint32_t inst_idx : cube_instances) {
+    for (std::uint32_t inst_idx : obj_instances) {
       const engine::MeshInstance &inst = scene_.instances()[inst_idx];
       const glm::vec3 pos{inst.model[3]};
       physics_bodies_.push_back({
@@ -32,9 +32,8 @@ public:
 
     character_ = std::make_unique<engine::physics::Character>(physics_, glm::vec3{0.0F, 20.0F, 0.0F},
                                                                 0.5F, 0.8F);
-    character_->set_max_strength(20.0F);  // horizontal push force: 20 N (was 100 N default)
-
-    std::cout << "Physics: " << physics_bodies_.size() << " cubes, "
+    character_->set_max_strength(20.0F);
+    std::cout << "Physics: " << obj_instances.size() << " objects, "
               << (trimesh_source && !trimesh_source->vertices.empty() ? "trimesh ground" : "ground plane")
               << "\nCharacter at y=20\n";
   }
