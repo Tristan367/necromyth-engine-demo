@@ -32,6 +32,7 @@ public:
 
     character_ = std::make_unique<engine::physics::Character>(physics_, glm::vec3{0.0F, 20.0F, 0.0F},
                                                                 0.5F, 0.8F);
+    character_->set_max_strength(20.0F);  // horizontal push force: 20 N (was 100 N default)
 
     std::cout << "Physics: " << physics_bodies_.size() << " cubes, "
               << (trimesh_source && !trimesh_source->vertices.empty() ? "trimesh ground" : "ground plane")
@@ -117,20 +118,39 @@ public:
     physics_.step(delta);
 
     const glm::vec3 char_pos = character_->position();
-    scene_.instance(character_instance_).model = glm::translate(glm::mat4(1.0F), char_pos);
 
     render_state_.prev = render_state_.curr;
     render_state_.curr = char_pos;
     render_state_.write_time_ms = SDL_GetTicks();
 
-    for (const auto &pb : physics_bodies_)
+    for (auto &pb : physics_bodies_) {
       physics_.sync_body_to_instance(pb.body_id, scene_.instance(pb.instance_index));
+      // Store for interpolation
+      const glm::vec3 p = scene_.instances()[pb.instance_index].model[3];
+      pb.prev_pos = pb.curr_pos;
+      pb.curr_pos = p;
+    }
+  }
+
+  void apply_interpolation(float alpha) {
+    alpha = std::clamp(alpha, 0.0F, 1.0F);
+    for (const auto &pb : physics_bodies_) {
+      const glm::vec3 p = glm::mix(pb.prev_pos, pb.curr_pos, alpha);
+      glm::mat4 &m = scene_.instance(pb.instance_index).model;
+      m[3] = glm::vec4(p.x, p.y, p.z, 1.0F);
+    }
+    // Character visual cube too
+    const glm::vec3 cp = character_position(alpha);
+    glm::mat4 &cm = scene_.instance(character_instance_).model;
+    cm[3] = glm::vec4(cp.x, cp.y, cp.z, 1.0F);
   }
 
 private:
   struct PhysicsEntry {
     JPH::BodyID body_id;
     std::uint32_t instance_index;
+    glm::vec3 prev_pos{0, 0, 0};
+    glm::vec3 curr_pos{0, 0, 0};
   };
 
   struct RenderState {

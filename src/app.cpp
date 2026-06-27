@@ -160,10 +160,15 @@ void DemoApp::run() {
       impl.physics_accumulator_ -= k_fixed_dt;
       ++ticks;
     }
+    if (impl.physics_accumulator_ > k_fixed_dt)
+      impl.physics_accumulator_ = std::fmod(impl.physics_accumulator_, k_fixed_dt);
+
+    // Interpolate all physics bodies to current frame's alpha
+    const float interp_alpha = impl.physics_accumulator_ / k_fixed_dt;
+    impl.server.apply_interpolation(interp_alpha);
 
     // Camera follows character (after physics, before render)
     if (impl.character_mode) {
-      const float interp_alpha = impl.physics_accumulator_ / k_fixed_dt;
       const glm::vec3 char_pos = impl.server.character_position(interp_alpha);
       const glm::vec3 look_fwd = impl.fly_camera.forward();
       impl.scene.camera().look_at(
