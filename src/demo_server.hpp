@@ -1,5 +1,6 @@
 #pragma once
 
+#include "demo_scene.hpp"
 #include "physics/physics_world.hpp"
 #include "scene/animation_utils.hpp"
 #include "scene/scene.hpp"
@@ -11,7 +12,7 @@
 
 class DemoServer {
 public:
-  explicit DemoServer(engine::Scene &scene, const std::vector<std::uint32_t> &obj_instances,
+  explicit DemoServer(engine::Scene &scene, const std::vector<app::PhysicsObjDesc> &obj_descs,
                       std::uint32_t character_instance, const engine::MeshSource *trimesh_source)
       : scene_{scene}, physics_(65536), character_instance_{character_instance} {
     if (trimesh_source && !trimesh_source->vertices.empty())
@@ -20,20 +21,20 @@ public:
       (void)physics_.create_box({25.0F, 0.2F, 25.0F}, {0.0F, -0.2F, 0.0F},
                           JPH::EMotionType::Static, engine::physics::Layers::kNonMoving);
 
-    for (std::uint32_t inst_idx : obj_instances) {
-      const engine::MeshInstance &inst = scene_.instances()[inst_idx];
+    for (const app::PhysicsObjDesc &desc : obj_descs) {
+      const engine::MeshInstance &inst = scene_.instances()[desc.instance_index];
       const glm::vec3 pos{inst.model[3]};
       physics_bodies_.push_back({
-          physics_.create_box({0.5F, 0.5F, 0.5F}, pos,
+          physics_.create_box(desc.box_half_extent, pos,
                               JPH::EMotionType::Dynamic, engine::physics::Layers::kMoving,
                               glm::quat(1.0F, 0.0F, 0.0F, 0.0F), 1.0F, 0.7F),
-          inst_idx});
+          desc.instance_index});
     }
 
     character_ = std::make_unique<engine::physics::Character>(physics_, glm::vec3{0.0F, 20.0F, 0.0F},
                                                                 0.5F, 0.8F);
     character_->set_max_strength(20.0F);
-    std::cout << "Physics: " << obj_instances.size() << " objects, "
+    std::cout << "Physics: " << obj_descs.size() << " objects, "
               << (trimesh_source && !trimesh_source->vertices.empty() ? "trimesh ground" : "ground plane")
               << "\nCharacter at y=20\n";
   }

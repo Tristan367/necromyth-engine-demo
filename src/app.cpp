@@ -35,7 +35,7 @@ struct DemoApp::Impl {
   engine::EngineConfig config;
   engine::SdlContext sdl;
   engine::SdlWindow window;
-  std::vector<std::uint32_t> cube_indices_;
+  std::vector<app::PhysicsObjDesc> obj_descs_;
   std::uint32_t char_instance_{};
   engine::MeshSource trimesh_source_;
   engine::Scene scene;
@@ -52,9 +52,9 @@ struct DemoApp::Impl {
   explicit Impl(engine::EngineConfig config_in)
       : config(std::move(config_in)),
         window("Necromyth Engine Demo", config.window_width, config.window_height),
-        scene(create_demo_scene(&cube_indices_, &char_instance_, &trimesh_source_)),
+        scene(create_demo_scene(&obj_descs_, &char_instance_, &trimesh_source_)),
         vulkan(window.handle(), config, scene),
-        server(scene, cube_indices_, char_instance_, &trimesh_source_),
+        server(scene, obj_descs_, char_instance_, &trimesh_source_),
         debug_ui(window.handle(), vulkan) {
     std::signal(SIGINT, on_quit_signal);
     std::signal(SIGTERM, on_quit_signal);

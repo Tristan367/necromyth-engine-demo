@@ -33,11 +33,11 @@ constexpr auto tile_array_layers = std::array{
 
 } // namespace
 
-static std::vector<std::uint32_t> cube_instance_indices;
+static std::vector<app::PhysicsObjDesc> obj_descs;
 static std::uint32_t character_sphere_index;
 static engine::MeshSource trimesh_mesh;
 
-static void add_physics_cube_instances(engine::Scene &scene, std::vector<std::uint32_t> &out_indices);
+static void add_physics_test_objects(engine::Scene &scene);
 
 void populate_demo_scene(engine::Scene &scene) {
   const DemoMeshLibrary assets = load_demo_mesh_library(scene);
@@ -214,9 +214,7 @@ void populate_demo_scene(engine::Scene &scene) {
 
   add_animation_test_model(scene, texture_cache);
 
-  std::vector<std::uint32_t> physics_instances;
-  add_physics_cube_instances(scene, physics_instances);
-  cube_instance_indices = physics_instances;
+  add_physics_test_objects(scene);
 
   // Character visual (capsule that will follow character position)
   {
@@ -254,18 +252,18 @@ void populate_demo_scene(engine::Scene &scene) {
 }
 
 auto create_demo_scene(
-    std::vector<std::uint32_t> *out_cube_indices,
+    std::vector<app::PhysicsObjDesc> *out_obj_descs,
     std::uint32_t *out_char_instance,
     engine::MeshSource *out_trimesh_mesh) -> engine::Scene {
   engine::Scene scene;
   populate_demo_scene(scene);
-  if (out_cube_indices)
-    *out_cube_indices = std::move(cube_instance_indices);
+  if (out_obj_descs)
+    *out_obj_descs = std::move(obj_descs);
   if (out_char_instance)
     *out_char_instance = character_sphere_index;
   if (out_trimesh_mesh)
     *out_trimesh_mesh = std::move(trimesh_mesh);
-  cube_instance_indices.clear();
+  obj_descs.clear();
   character_sphere_index = 0;
   trimesh_mesh = {};
   return scene;
@@ -288,43 +286,45 @@ void toggle_demo_animation(engine::Scene &scene) {
   }
 }
 
-void add_physics_cube_instances(engine::Scene &scene, std::vector<std::uint32_t> &out_indices) {
+void add_physics_test_objects(engine::Scene &scene) {
   struct ObjectDef {
     engine::MeshSource (*maker)();
     glm::vec3 pos;
+    glm::vec3 box_half_extent;
   };
 
   const ObjectDef objects[] = {
-      {[] { return app::make_box_mesh(0.4F, 0.3F, 0.5F); },            { 0.0F, 25.0F,  0.0F}},
-      {[] { return app::make_box_mesh(0.5F, 0.5F, 0.5F); },            { 1.5F, 28.0F,  0.5F}},
-      {[] { return app::make_box_mesh(0.2F, 0.8F, 0.3F); },            {-1.0F, 30.0F, -1.0F}},
-      {[] { return app::make_box_mesh(0.6F, 0.15F, 0.6F); },            { 2.0F, 32.0F, -1.5F}},
-      {[] { return app::make_sphere_mesh(0.4F); },                      {-2.0F, 26.0F,  1.0F}},
-      {[] { return app::make_sphere_mesh(0.25F); },                     { 3.0F, 29.0F,  2.0F}},
-      {[] { return app::make_sphere_mesh(0.5F); },                      {-3.0F, 33.0F, -2.0F}},
-      {[] { return app::make_capsule_mesh(0.3F, 0.4F); },              { 0.0F, 35.0F,  3.0F}},
-      {[] { return app::make_capsule_mesh(0.2F, 0.6F); },              {-1.5F, 27.0F, -3.0F}},
-      {[] { return app::make_capsule_mesh(0.25F, 0.25F); },            { 1.0F, 31.0F, -2.5F}},
-      {[] { return app::make_capsule_mesh(0.35F, 0.15F, 0.3F); },      {-2.5F, 34.0F,  2.5F}},
-      {[] { return app::make_capsule_mesh(0.15F, 0.35F, 0.35F); },     { 2.5F, 30.0F,  3.5F}},
-      {[] { return app::make_cylinder_mesh(0.3F, 0.3F, 0.4F); },      { 0.5F, 33.0F, -3.5F}},
-      {[] { return app::make_cylinder_mesh(0.2F, 0.2F, 0.7F); },      {-3.5F, 28.0F,  0.0F}},
-      {[] { return app::make_cylinder_mesh(0.35F, 0.15F, 0.5F); },     { 3.5F, 32.0F, -1.0F}},
-      {[] { return app::make_cylinder_mesh(0.15F, 0.4F, 0.3F); },      { 1.5F, 29.0F,  4.0F}},
-      {[] { return app::make_box_mesh(0.3F, 0.3F, 0.3F); },            {-1.0F, 36.0F,  1.5F}},
-      {[] { return app::make_sphere_mesh(0.35F); },                     { 0.0F, 38.0F, -2.0F}},
-      {[] { return app::make_capsule_mesh(0.4F, 0.2F); },              { 4.0F, 34.0F,  1.0F}},
-      {[] { return app::make_cylinder_mesh(0.25F, 0.25F, 0.25F); },   {-4.0F, 31.0F, -0.5F}},
+      {[] { return app::make_box_mesh(0.4F, 0.3F, 0.5F); },     { 0.0F, 25.0F,  0.0F}, {0.4F, 0.3F, 0.5F}},
+      {[] { return app::make_box_mesh(0.5F, 0.5F, 0.5F); },     { 1.5F, 28.0F,  0.5F}, {0.5F, 0.5F, 0.5F}},
+      {[] { return app::make_box_mesh(0.2F, 0.8F, 0.3F); },     {-1.0F, 30.0F, -1.0F}, {0.2F, 0.8F, 0.3F}},
+      {[] { return app::make_box_mesh(0.6F, 0.15F, 0.6F); },    { 2.0F, 32.0F, -1.5F}, {0.6F, 0.15F, 0.6F}},
+      {[] { return app::make_sphere_mesh(0.4F); },               {-2.0F, 26.0F,  1.0F}, {0.4F, 0.4F, 0.4F}},
+      {[] { return app::make_sphere_mesh(0.25F); },              { 3.0F, 29.0F,  2.0F}, {0.25F, 0.25F, 0.25F}},
+      {[] { return app::make_sphere_mesh(0.5F); },               {-3.0F, 33.0F, -2.0F}, {0.5F, 0.5F, 0.5F}},
+      {[] { return app::make_capsule_mesh(0.3F, 0.3F, 0.4F); },  { 0.0F, 35.0F,  3.0F}, {0.3F, 0.7F, 0.3F}},
+      {[] { return app::make_capsule_mesh(0.2F, 0.2F, 0.6F); },  {-1.5F, 27.0F, -3.0F}, {0.2F, 0.8F, 0.2F}},
+      {[] { return app::make_capsule_mesh(0.25F, 0.25F, 0.25F);},{ 1.0F, 31.0F, -2.5F}, {0.25F, 0.5F, 0.25F}},
+      {[] { return app::make_capsule_mesh(0.35F, 0.15F, 0.3F); },{-2.5F, 34.0F,  2.5F}, {0.35F, 0.65F, 0.15F}},
+      {[] { return app::make_capsule_mesh(0.15F, 0.35F, 0.35F);},{ 2.5F, 30.0F,  3.5F}, {0.35F, 0.7F, 0.15F}},
+      {[] { return app::make_cylinder_mesh(0.3F, 0.3F, 0.4F); }, { 0.5F, 33.0F, -3.5F}, {0.3F, 0.4F, 0.3F}},
+      {[] { return app::make_cylinder_mesh(0.2F, 0.2F, 0.7F); }, {-3.5F, 28.0F,  0.0F}, {0.2F, 0.7F, 0.2F}},
+      {[] { return app::make_cylinder_mesh(0.35F, 0.15F, 0.5F);},{ 3.5F, 32.0F, -1.0F}, {0.35F, 0.5F, 0.15F}},
+      {[] { return app::make_cylinder_mesh(0.15F, 0.4F, 0.3F); },{ 1.5F, 29.0F,  4.0F}, {0.15F, 0.3F, 0.4F}},
+      {[] { return app::make_box_mesh(0.3F, 0.3F, 0.3F); },     {-1.0F, 36.0F,  1.5F}, {0.3F, 0.3F, 0.3F}},
+      {[] { return app::make_sphere_mesh(0.35F); },              { 0.0F, 38.0F, -2.0F}, {0.35F, 0.35F, 0.35F}},
+      {[] { return app::make_capsule_mesh(0.4F, 0.4F, 0.2F); },  { 4.0F, 34.0F,  1.0F}, {0.4F, 0.6F, 0.4F}},
+      {[] { return app::make_cylinder_mesh(0.25F, 0.25F, 0.25F);},{-4.0F, 31.0F, -0.5F}, {0.25F, 0.25F, 0.25F}},
   };
 
   for (const ObjectDef &def : objects) {
     const std::uint32_t mesh_idx = scene.add_mesh(def.maker());
-    out_indices.push_back(scene.add_instance({
+    const std::uint32_t inst_idx = scene.add_instance({
         .mesh_index = mesh_idx,
         .texture_index = 0,
         .model = glm::translate(glm::mat4(1.0F), def.pos),
         .layer = engine::RenderLayer::Opaque,
-      }));
+    });
+    obj_descs.push_back(app::PhysicsObjDesc{inst_idx, def.box_half_extent});
   }
 }
 

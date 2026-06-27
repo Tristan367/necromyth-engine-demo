@@ -115,11 +115,11 @@ inline auto make_cube_mesh(float half = 0.5F) -> engine::MeshSource {
     int next = (ring + 1) * (segments + 1);
     for (int seg = 0; seg < segments; ++seg) {
       mesh.indices.push_back(base + seg);
+      mesh.indices.push_back(next + seg + 1);
       mesh.indices.push_back(next + seg);
-      mesh.indices.push_back(next + seg + 1);
       mesh.indices.push_back(base + seg);
-      mesh.indices.push_back(next + seg + 1);
       mesh.indices.push_back(base + seg + 1);
+      mesh.indices.push_back(next + seg + 1);
     }
   }
 
@@ -181,11 +181,11 @@ inline auto make_cube_mesh(float half = 0.5F) -> engine::MeshSource {
       const int next_curr = next_base + seg;
       const int next_next = next_base + (seg + 1) % segments;
       mesh.indices.push_back(curr);
+      mesh.indices.push_back(next_next);
       mesh.indices.push_back(next_curr);
-      mesh.indices.push_back(next_next);
       mesh.indices.push_back(curr);
-      mesh.indices.push_back(next_next);
       mesh.indices.push_back(next_seg);
+      mesh.indices.push_back(next_next);
     }
   }
 
@@ -225,8 +225,8 @@ inline auto make_capsule_mesh(float radius, float half_height,
   // Body quads
   for (int seg = 0; seg < segments; ++seg) {
     int b0 = seg * 2, b1 = (seg + 1) * 2;
-    mesh.indices.push_back(b0); mesh.indices.push_back(b1); mesh.indices.push_back(b1 + 1);
-    mesh.indices.push_back(b0); mesh.indices.push_back(b1 + 1); mesh.indices.push_back(b0 + 1);
+    mesh.indices.push_back(b0); mesh.indices.push_back(b1 + 1); mesh.indices.push_back(b1);
+    mesh.indices.push_back(b0); mesh.indices.push_back(b0 + 1); mesh.indices.push_back(b1 + 1);
   }
 
   // Bottom cap
@@ -235,8 +235,8 @@ inline auto make_capsule_mesh(float radius, float half_height,
   for (int seg = 0; seg < segments; ++seg) {
     int a = seg * 2, b = (seg + 1) * 2;
     mesh.indices.push_back(bottom_center);
-    mesh.indices.push_back(b);
     mesh.indices.push_back(a);
+    mesh.indices.push_back(b);
   }
 
   // Top cap
@@ -245,8 +245,8 @@ inline auto make_capsule_mesh(float radius, float half_height,
   for (int seg = 0; seg < segments; ++seg) {
     int a = seg * 2 + 1, b = (seg + 1) * 2 + 1;
     mesh.indices.push_back(top_center);
-    mesh.indices.push_back(a);
     mesh.indices.push_back(b);
+    mesh.indices.push_back(a);
   }
 
   return mesh;
