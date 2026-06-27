@@ -85,7 +85,7 @@ inline auto make_cube_mesh(float half = 0.5F) -> engine::MeshSource {
   return make_box_mesh(half, half, half);
 }
 
-[[nodiscard]] inline auto make_sphere_mesh(float radius, int rings = 12, int segments = 16) -> engine::MeshSource {
+[[nodiscard]] inline auto make_sphere_mesh(float radius, int rings = 8, int segments = 12) -> engine::MeshSource {
   engine::MeshSource mesh;
 
   auto v = [&](float x, float y, float z) {
@@ -128,7 +128,7 @@ inline auto make_cube_mesh(float half = 0.5F) -> engine::MeshSource {
 
 [[nodiscard]] inline auto make_capsule_mesh(
     float top_radius, float bottom_radius, float half_height,
-    int segments = 16, int rings = 8) -> engine::MeshSource {
+    int segments = 12, int rings = 4) -> engine::MeshSource {
   engine::MeshSource mesh;
 
   auto v = [&](float x, float y, float z, float nx, float ny, float nz) {
@@ -153,28 +153,28 @@ inline auto make_cube_mesh(float half = 0.5F) -> engine::MeshSource {
     }
   };
 
-  // Top dome: y from top down to +half_height
+  // Top dome
   for (int i = 0; i <= rings; ++i) {
     float a = (3.14159265F * 0.5F) * static_cast<float>(i) / static_cast<float>(rings);
     float y = half_height + top_radius * std::cos(a);
     float r = top_radius * std::sin(a);
-    add_ring(y, r, std::sin(a));
+    add_ring(y, r, std::cos(a));  // normal Y = cos(a): 1 at pole, 0 at equator
   }
 
-  // Body: bottom of top dome to top of bottom dome
+  // Body
   for (int i = 0; i <= 2; ++i) {
     float t = static_cast<float>(i) / 2.0F;
-    float y = half_height + t * (-half_height - half_height);  // lerp top to bottom
+    float y = half_height + t * (-half_height - half_height);
     float r = top_radius + t * (bottom_radius - top_radius);
     add_ring(y, r, 0.0F);
   }
 
-  // Bottom dome: y from -half_height down to bottom
+  // Bottom dome
   for (int i = 0; i <= rings; ++i) {
     float a = (3.14159265F * 0.5F) * static_cast<float>(i) / static_cast<float>(rings);
     float y = -half_height - bottom_radius * std::cos(a);
     float r = bottom_radius * std::sin(a);
-    add_ring(y, r, -std::sin(a));
+    add_ring(y, r, -std::cos(a));  // normal Y = -cos(a): -1 at pole, 0 at equator
   }
 
   const int total_rings_v = (rings + 1) + 3 + (rings + 1) - 1;  // ring count for index loop
@@ -200,7 +200,7 @@ inline auto make_cube_mesh(float half = 0.5F) -> engine::MeshSource {
 }
 
 inline auto make_capsule_mesh(float radius, float half_height,
-                               int segments = 16, int rings = 8) -> engine::MeshSource {
+                               int segments = 12, int rings = 4) -> engine::MeshSource {
   return make_capsule_mesh(radius, radius, half_height, segments, rings);
 }
 
