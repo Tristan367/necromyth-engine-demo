@@ -151,7 +151,7 @@ inline auto make_cube_mesh(float half = 0.5F) -> engine::MeshSource {
     if (y < -half_height) {
       const float dy = y + half_height;
       r = std::sqrt(bottom_radius * bottom_radius - dy * dy);
-      ny = -dy / bottom_radius;
+      ny = dy / bottom_radius;
     } else if (y > half_height) {
       const float dy = y - half_height;
       r = std::sqrt(top_radius * top_radius - dy * dy);

@@ -16,7 +16,7 @@ public:
                       std::uint32_t character_instance, const engine::MeshSource *trimesh_source)
       : scene_{scene}, physics_(65536), character_instance_{character_instance} {
     if (trimesh_source && !trimesh_source->vertices.empty())
-      (void)physics_.create_static_mesh(*trimesh_source, glm::vec3(0.0F));
+      (void)physics_.create_static_mesh(*trimesh_source, glm::vec3(0.0F, -3.0F, 0.0F));
     else
       (void)physics_.create_box({25.0F, 0.2F, 25.0F}, {0.0F, -0.2F, 0.0F},
                           JPH::EMotionType::Static, engine::physics::Layers::kNonMoving);

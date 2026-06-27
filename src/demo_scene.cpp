@@ -13,6 +13,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstdlib>
 #include <iostream>
 #include <numbers>
 #include <unordered_map>
@@ -293,38 +294,53 @@ void add_physics_test_objects(engine::Scene &scene) {
     glm::vec3 box_half_extent;
   };
 
-  const ObjectDef objects[] = {
-      {[] { return app::make_box_mesh(0.4F, 0.3F, 0.5F); },     { 0.0F, 25.0F,  0.0F}, {0.4F, 0.3F, 0.5F}},
-      {[] { return app::make_box_mesh(0.5F, 0.5F, 0.5F); },     { 1.5F, 28.0F,  0.5F}, {0.5F, 0.5F, 0.5F}},
-      {[] { return app::make_box_mesh(0.2F, 0.8F, 0.3F); },     {-1.0F, 30.0F, -1.0F}, {0.2F, 0.8F, 0.3F}},
-      {[] { return app::make_box_mesh(0.6F, 0.15F, 0.6F); },    { 2.0F, 32.0F, -1.5F}, {0.6F, 0.15F, 0.6F}},
-      {[] { return app::make_sphere_mesh(0.4F); },               {-2.0F, 26.0F,  1.0F}, {0.4F, 0.4F, 0.4F}},
-      {[] { return app::make_sphere_mesh(0.25F); },              { 3.0F, 29.0F,  2.0F}, {0.25F, 0.25F, 0.25F}},
-      {[] { return app::make_sphere_mesh(0.5F); },               {-3.0F, 33.0F, -2.0F}, {0.5F, 0.5F, 0.5F}},
-      {[] { return app::make_capsule_mesh(0.3F, 0.3F, 0.4F); },  { 0.0F, 35.0F,  3.0F}, {0.3F, 0.7F, 0.3F}},
-      {[] { return app::make_capsule_mesh(0.2F, 0.2F, 0.6F); },  {-1.5F, 27.0F, -3.0F}, {0.2F, 0.8F, 0.2F}},
-      {[] { return app::make_capsule_mesh(0.25F, 0.25F, 0.25F);},{ 1.0F, 31.0F, -2.5F}, {0.25F, 0.5F, 0.25F}},
-      {[] { return app::make_capsule_mesh(0.35F, 0.15F, 0.3F); },{-2.5F, 34.0F,  2.5F}, {0.35F, 0.65F, 0.15F}},
-      {[] { return app::make_capsule_mesh(0.15F, 0.35F, 0.35F);},{ 2.5F, 30.0F,  3.5F}, {0.35F, 0.7F, 0.15F}},
-      {[] { return app::make_cylinder_mesh(0.3F, 0.3F, 0.4F); }, { 0.5F, 33.0F, -3.5F}, {0.3F, 0.4F, 0.3F}},
-      {[] { return app::make_cylinder_mesh(0.2F, 0.2F, 0.7F); }, {-3.5F, 28.0F,  0.0F}, {0.2F, 0.7F, 0.2F}},
-      {[] { return app::make_cylinder_mesh(0.35F, 0.15F, 0.5F);},{ 3.5F, 32.0F, -1.0F}, {0.35F, 0.5F, 0.15F}},
-      {[] { return app::make_cylinder_mesh(0.15F, 0.4F, 0.3F); },{ 1.5F, 29.0F,  4.0F}, {0.15F, 0.3F, 0.4F}},
-      {[] { return app::make_box_mesh(0.3F, 0.3F, 0.3F); },     {-1.0F, 36.0F,  1.5F}, {0.3F, 0.3F, 0.3F}},
-      {[] { return app::make_sphere_mesh(0.35F); },              { 0.0F, 38.0F, -2.0F}, {0.35F, 0.35F, 0.35F}},
-      {[] { return app::make_capsule_mesh(0.4F, 0.4F, 0.2F); },  { 4.0F, 34.0F,  1.0F}, {0.4F, 0.6F, 0.4F}},
-      {[] { return app::make_cylinder_mesh(0.25F, 0.25F, 0.25F);},{-4.0F, 31.0F, -0.5F}, {0.25F, 0.25F, 0.25F}},
+  struct { float r, g, b; } colors[] = {
+    {0.8F, 0.2F, 0.2F}, {0.2F, 0.8F, 0.2F}, {0.2F, 0.2F, 0.8F}, {0.8F, 0.8F, 0.2F},
+    {0.8F, 0.2F, 0.8F}, {0.2F, 0.8F, 0.8F}, {0.5F, 0.3F, 0.7F}, {0.3F, 0.7F, 0.5F},
+    {0.7F, 0.5F, 0.3F}, {0.9F, 0.6F, 0.1F}, {0.1F, 0.6F, 0.9F}, {0.6F, 0.9F, 0.1F},
+    {0.4F, 0.4F, 0.8F}, {0.4F, 0.8F, 0.4F}, {0.8F, 0.4F, 0.4F}, {0.5F, 0.5F, 0.5F},
+    {1.0F, 0.3F, 0.3F}, {0.3F, 1.0F, 0.3F}, {0.3F, 0.3F, 1.0F}, {1.0F, 0.7F, 0.2F},
   };
 
-  for (const ObjectDef &def : objects) {
-    const std::uint32_t mesh_idx = scene.add_mesh(def.maker());
+  std::srand(42);
+  for (int i = 0; i < 50; ++i) {
+    auto &c = colors[i % 20];
+    const float w = c.r, v = c.g, b = c.b;
+
+    const int shape = std::rand() % 6;
+    const float s = 0.1F + static_cast<float>(std::rand() % 1000) * 0.002F;  // 0.1 - 2.1
+    const float sx = s * (0.5F + static_cast<float>(std::rand() % 300) * 0.003F);
+    const float sy = s * (0.5F + static_cast<float>(std::rand() % 300) * 0.003F);
+    const float sz = s * (0.5F + static_cast<float>(std::rand() % 300) * 0.003F);
+    const float x = static_cast<float>(std::rand() % 1000) * 0.02F - 10.0F;
+    const float y = 20.0F + static_cast<float>(std::rand() % 2000) * 0.02F;
+    const float z = static_cast<float>(std::rand() % 1000) * 0.02F - 10.0F;
+
+    engine::MeshSource mesh;
+    glm::vec3 box_half;
+
+    switch (shape) {
+    case 0: mesh = app::make_box_mesh(sx, sy, sz); box_half = {sx, sy, sz}; break;
+    case 1: mesh = app::make_sphere_mesh(s); box_half = {s, s, s}; break;
+    case 2: mesh = app::make_capsule_mesh(s, s * 1.5F); box_half = {s, s * 1.5F + s, s}; break;
+    case 3: mesh = app::make_capsule_mesh(s, s * 0.7F, s * 1.2F); box_half = {s, s * 1.2F + std::max(s, s*0.7F), s}; break;
+    case 4: mesh = app::make_cylinder_mesh(s, s, s * 1.2F); box_half = {s, s * 1.2F, s}; break;
+    case 5: mesh = app::make_cylinder_mesh(s * 0.6F, s, s * 1.5F); box_half = {std::max(s*0.6F, s), s * 1.5F, std::max(s*0.6F, s)}; break;
+    }
+
+    // Color the vertices
+    for (auto &vert : mesh.vertices) {
+      vert.color[0] = w; vert.color[1] = v; vert.color[2] = b;
+    }
+
+    const std::uint32_t mesh_idx = scene.add_mesh(mesh);
     const std::uint32_t inst_idx = scene.add_instance({
         .mesh_index = mesh_idx,
         .texture_index = 0,
-        .model = glm::translate(glm::mat4(1.0F), def.pos),
+        .model = glm::translate(glm::mat4(1.0F), glm::vec3{x, y, z}),
         .layer = engine::RenderLayer::Opaque,
     });
-    obj_descs.push_back(app::PhysicsObjDesc{inst_idx, def.box_half_extent});
+    obj_descs.push_back(app::PhysicsObjDesc{inst_idx, box_half});
   }
 }
 
