@@ -138,31 +138,11 @@ inline auto make_cube_mesh(float half = 0.5F) -> engine::MeshSource {
     vert.color[0] = 1.0F; vert.color[1] = 1.0F; vert.color[2] = 1.0F;
     return vert;
   };
-
-  const float bottom = -half_height - bottom_radius;
-  const float top = half_height + top_radius;
   const float two_pi = 2.0F * 3.14159265F;
-  const int total_rings = rings * 2 + 2;
 
-  // Generate vertices top-to-bottom (matching sphere order for consistent winding)
-  for (int ring = 0; ring <= total_rings; ++ring) {
-    const float y = top - (top - bottom) * static_cast<float>(ring) / static_cast<float>(total_rings);
-
-    float r, ny;
-    if (y < -half_height) {
-      const float dy = y + half_height;
-      r = std::sqrt(bottom_radius * bottom_radius - dy * dy);
-      ny = dy / bottom_radius;
-    } else if (y > half_height) {
-      const float dy = y - half_height;
-      r = std::sqrt(top_radius * top_radius - dy * dy);
-      ny = dy / top_radius;
-    } else {
-      float t = (y + half_height) / (2.0F * half_height);
-      r = bottom_radius + (top_radius - bottom_radius) * t;
-      ny = 0.0F;
-    }
-
+  // Section-based ring allocation: top dome (rings rings), body (2 rings), bottom dome (rings rings)
+  // Each dome gets guaranteed curvature regardless of height ratio
+  auto add_ring = [&](float y, float r, float ny) {
     for (int seg = 0; seg < segments; ++seg) {
       const float theta = two_pi * static_cast<float>(seg) / static_cast<float>(segments);
       const float x = r * std::cos(theta);
@@ -171,17 +151,42 @@ inline auto make_cube_mesh(float half = 0.5F) -> engine::MeshSource {
       const float nz = r > 0.001F ? z / r : 0.0F;
       mesh.vertices.push_back(v(x, y, z, nx, ny, nz));
     }
+  };
+
+  // Top dome: y from top down to +half_height
+  for (int i = 0; i <= rings; ++i) {
+    float a = (3.14159265F * 0.5F) * static_cast<float>(i) / static_cast<float>(rings);
+    float y = half_height + top_radius * std::cos(a);
+    float r = top_radius * std::sin(a);
+    add_ring(y, r, std::sin(a));
   }
 
-  for (int ring = 0; ring < total_rings; ++ring) {
+  // Body: bottom of top dome to top of bottom dome
+  for (int i = 0; i <= 2; ++i) {
+    float t = static_cast<float>(i) / 2.0F;
+    float y = half_height + t * (-half_height - half_height);  // lerp top to bottom
+    float r = top_radius + t * (bottom_radius - top_radius);
+    add_ring(y, r, 0.0F);
+  }
+
+  // Bottom dome: y from -half_height down to bottom
+  for (int i = 0; i <= rings; ++i) {
+    float a = (3.14159265F * 0.5F) * static_cast<float>(i) / static_cast<float>(rings);
+    float y = -half_height - bottom_radius * std::cos(a);
+    float r = bottom_radius * std::sin(a);
+    add_ring(y, r, -std::sin(a));
+  }
+
+  const int total_rings_v = (rings + 1) + 3 + (rings + 1) - 1;  // ring count for index loop
+
+  for (int ring = 0; ring < total_rings_v; ++ring) {
     const int base = ring * segments;
     const int next_base = (ring + 1) * segments;
     for (int seg = 0; seg < segments; ++seg) {
-      const int tl = base + seg;                       // top-left (base ring = top)
-      const int tr = base + (seg + 1) % segments;       // top-right
-      const int bl = next_base + seg;                   // bottom-left (next ring = below)
-      const int br = next_base + (seg + 1) % segments;  // bottom-right
-      // Same winding as sphere: (tl, br, bl) + (tl, tr, br)
+      const int tl = base + seg;
+      const int tr = base + (seg + 1) % segments;
+      const int bl = next_base + seg;
+      const int br = next_base + (seg + 1) % segments;
       mesh.indices.push_back(tl);
       mesh.indices.push_back(br);
       mesh.indices.push_back(bl);
