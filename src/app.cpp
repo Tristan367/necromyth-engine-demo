@@ -1,6 +1,7 @@
 #include "app.hpp"
 
 #include "debug_ui.hpp"
+#include "debug_renderer.hpp"
 #include "demo_scene.hpp"
 #include "demo_server.hpp"
 #include "fly_camera.hpp"
@@ -42,6 +43,7 @@ struct DemoApp::Impl {
   engine::VulkanContext vulkan;
   DemoServer server;
   DebugUi debug_ui;
+  std::unique_ptr<DebugLineRenderer> debug_lines_;
   FlyCameraController fly_camera;
   InputRouter input;
   std::uint64_t last_frame_counter{};
@@ -64,7 +66,15 @@ struct DemoApp::Impl {
 
     vulkan.set_frame_overlay([this](const engine::FrameOverlayContext &context) {
       debug_ui.record_overlay(context);
+      if (debug_lines_ && server.debug_active())
+        debug_lines_->draw(context.command_buffer,
+                           vulkan.frame_set_obj(context.frame_index),
+                           server.debug_lines());
     });
+
+    debug_lines_ = std::make_unique<DebugLineRenderer>(
+        vulkan.device_ref(), vulkan.phys_dev(), vulkan.color_fmt(), vulkan.depth_fmt(),
+        ENGINE_DEBUG_LINE_SPIRV, vulkan.frame_layout_obj(), vulkan.sample_count());
 
     std::cout << "Selected GPU: " << vulkan.gpu_name();
     if (config.gpu_device_index)
@@ -103,6 +113,13 @@ void DemoApp::run() {
         impl.character_mode = !impl.character_mode;
         impl.fly_camera.set_capture(!impl.character_mode);
         std::cout << (impl.character_mode ? "Character mode\n" : "Fly mode\n");
+        continue;
+      }
+
+      if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_F3 &&
+          !impl.debug_ui.wants_keyboard()) {
+        impl.server.toggle_debug();
+        std::cout << (impl.server.debug_active() ? "Debug wireframes ON\n" : "Debug wireframes OFF\n");
         continue;
       }
 

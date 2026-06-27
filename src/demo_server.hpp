@@ -1,6 +1,7 @@
 #pragma once
 
 #include "demo_scene.hpp"
+#include "debug_renderer.hpp"
 #include "physics/physics_world.hpp"
 #include "scene/animation_utils.hpp"
 #include "scene/scene.hpp"
@@ -63,6 +64,12 @@ public:
   [[nodiscard]] auto character_position(float interp_alpha = 0.0F) const -> glm::vec3 {
     const float fraction = std::clamp(interp_alpha, 0.0F, 1.0F);
     return glm::mix(render_state_.prev, render_state_.curr, fraction);
+  }
+
+  void toggle_debug() { debug_enabled_ = !debug_enabled_; }
+  [[nodiscard]] auto debug_active() const -> bool { return debug_enabled_; }
+  [[nodiscard]] auto debug_lines() const -> const std::vector<JoltDebugRenderer::Line> & {
+    return debug_renderer_.lines();
   }
 
   void tick(float delta, float input_forward, float input_right, bool input_jump) {
@@ -151,6 +158,24 @@ public:
       pb.prev_pos = pb.curr_pos;
       pb.curr_pos = p;
     }
+
+    if (debug_enabled_) {
+      debug_renderer_.clear();
+      for (auto &pb : physics_bodies_) {
+        JPH::BodyLockRead lock(physics_.physics_system().GetBodyLockInterface(), pb.body_id);
+        if (!lock.Succeeded()) continue;
+        const JPH::Shape *s = lock.GetBody().GetShape();
+        if (s->GetSubType() == JPH::EShapeSubType::Mesh) continue;
+        s->Draw(&debug_renderer_, lock.GetBody().GetWorldTransform(),
+                JPH::Vec3::sReplicate(1.0F), JPH::Color::sGreen, false, true);
+      }
+      // Character
+      JPH::Ref<JPH::CapsuleShape> cs(new JPH::CapsuleShape(0.4f, 0.5f));
+      const glm::vec3 cp = character_->position();
+      cs->Draw(&debug_renderer_,
+               JPH::RMat44::sTranslation(JPH::RVec3(cp.x, cp.y, cp.z)),
+               JPH::Vec3::sReplicate(1.0F), JPH::Color::sRed, false, true);
+    }
   }
 
   void apply_interpolation(float alpha) {
@@ -187,4 +212,6 @@ private:
   RenderState render_state_;
   std::vector<PhysicsEntry> physics_bodies_;
   glm::vec3 smoothed_input_{0, 0, 0};
+  JoltDebugRenderer debug_renderer_;
+  bool debug_enabled_{false};
 };

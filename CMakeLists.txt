@@ -60,7 +60,12 @@ add_executable(NecromythDemo
     src/demo_assets.cpp
     src/demo_anim.cpp
     src/debug_ui.cpp
+    "$ENV{HOME}/opt/JoltPhysics/Jolt/Renderer/DebugRenderer.cpp"
 )
+
+target_compile_definitions(NecromythDemo PRIVATE JPH_DEBUG_RENDERER)
+
+target_compile_definitions(NecromythDemo PRIVATE JPH_DEBUG_RENDERER)
 
 target_link_libraries(NecromythDemo PRIVATE VCE::Engine app_imgui)
 
