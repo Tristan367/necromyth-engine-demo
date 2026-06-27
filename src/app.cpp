@@ -17,6 +17,7 @@
 
 #include <csignal>
 #include <iostream>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -67,14 +68,13 @@ struct DemoApp::Impl {
     vulkan.set_frame_overlay([this](const engine::FrameOverlayContext &context) {
       debug_ui.record_overlay(context);
       if (debug_lines_ && server.debug_active())
-        debug_lines_->draw(context.command_buffer,
-                           vulkan.frame_set_obj(context.frame_index),
-                           server.debug_lines());
+        ; // debug_lines_->draw(context.command_buffer, vulkan.frame_set_obj(context.frame_index), server.debug_lines(), context.extent);
     });
 
-    debug_lines_ = std::make_unique<DebugLineRenderer>(
-        vulkan.device_ref(), vulkan.phys_dev(), vulkan.color_fmt(), vulkan.depth_fmt(),
-        ENGINE_DEBUG_LINE_SPIRV, vulkan.frame_layout_obj(), vulkan.sample_count());
+    // Debug line renderer — pipeline creation crashes; needs debug before enabling
+    // debug_lines_ = std::make_unique<DebugLineRenderer>(
+    //     vulkan.device_ref(), vulkan.mem_props(), vulkan.color_fmt(), vulkan.depth_fmt(),
+    //     ENGINE_DEBUG_LINE_SPIRV, vulkan.frame_layout_obj(), vulkan.sample_count());
 
     std::cout << "Selected GPU: " << vulkan.gpu_name();
     if (config.gpu_device_index)

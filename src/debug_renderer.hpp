@@ -45,11 +45,11 @@ class DebugLineRenderer {
 public:
   struct Vertex { float pos[3]; float color[4]; };
 
-  DebugLineRenderer(vk::raii::Device &dev, vk::raii::PhysicalDevice phys_dev,
+  DebugLineRenderer(vk::raii::Device &dev, vk::PhysicalDeviceMemoryProperties mem_props,
                     vk::Format c_fmt, vk::Format d_fmt,
                     std::string_view spirv, vk::DescriptorSetLayout frame_layout,
                     vk::SampleCountFlagBits samples)
-      : dev_(dev), phys_dev_(std::move(phys_dev)) {
+      : dev_(dev), mem_props_(mem_props) {
     auto code = engine::read_spirv_file(spirv);
     auto vs = engine::create_shader_module(dev, code);
     auto fs = engine::create_shader_module(dev, code);
@@ -65,7 +65,7 @@ public:
         .vertexAttributeDescriptionCount = 2, .pVertexAttributeDescriptions = attrs};
     const vk::PipelineInputAssemblyStateCreateInfo ia{.topology = vk::PrimitiveTopology::eLineList};
     const vk::PipelineRasterizationStateCreateInfo rs{.polygonMode = vk::PolygonMode::eFill,
-        .cullMode = vk::CullModeFlagBits::eNone, .frontFace = vk::FrontFace::eCounterClockwise, .lineWidth = 2.0f};
+        .cullMode = vk::CullModeFlagBits::eNone, .frontFace = vk::FrontFace::eCounterClockwise, .lineWidth = 1.0f};
     const vk::PipelineMultisampleStateCreateInfo ms{.rasterizationSamples = samples};
     const vk::PipelineDepthStencilStateCreateInfo ds{.depthTestEnable = VK_TRUE,
         .depthWriteEnable = VK_FALSE, .depthCompareOp = vk::CompareOp::eLessOrEqual};
@@ -74,7 +74,11 @@ public:
         vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA};
     const vk::PipelineColorBlendStateCreateInfo cb{
         .attachmentCount = 1, .pAttachments = &bl};
-    const vk::PipelineDynamicStateCreateInfo dyn{.dynamicStateCount = 0, .pDynamicStates = nullptr};
+    const vk::DynamicState dyn_states[]{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+    const vk::PipelineDynamicStateCreateInfo dyn{
+        .dynamicStateCount = 2, .pDynamicStates = dyn_states};
+
+    const vk::PipelineViewportStateCreateInfo vp{.viewportCount = 1, .scissorCount = 1};
 
     const vk::PipelineShaderStageCreateInfo stages[]{
         {.stage = vk::ShaderStageFlagBits::eVertex, .module = *vs, .pName = "vertMain"},
@@ -82,16 +86,19 @@ public:
 
     vk::raii::PipelineCache cache(dev, {});
     vk::StructureChain<vk::GraphicsPipelineCreateInfo, vk::PipelineRenderingCreateInfo> chain{
-      {.stageCount=2, .pStages=stages, .pVertexInputState=&vi, .pInputAssemblyState=&ia,
+      {.stageCount=2, .pStages=stages, .pVertexInputState=&vi,        .pInputAssemblyState=&ia, .pViewportState=&vp,
        .pRasterizationState=&rs, .pMultisampleState=&ms, .pDepthStencilState=&ds,
-       .pColorBlendState=&cb, .layout=*pip_layout_, .renderPass=nullptr},
+       .layout=*pip_layout_, .renderPass=nullptr},
       {.colorAttachmentCount=1, .pColorAttachmentFormats=&c_fmt, .depthAttachmentFormat=d_fmt}};
     pip_ = vk::raii::Pipeline(dev, cache, chain.get<vk::GraphicsPipelineCreateInfo>());
   }
 
   void draw(vk::raii::CommandBuffer &cmd, vk::DescriptorSet frame_set,
-            const std::vector<JoltDebugRenderer::Line> &lines) {
-    if (lines.empty()) return;
+            const std::vector<JoltDebugRenderer::Line> &lines, vk::Extent2D extent) {
+    if (lines.empty() || extent.width == 0 || extent.height == 0) return;
+
+    cmd.setViewport(0, vk::Viewport{0, 0, (float)extent.width, (float)extent.height, 0, 1});
+    cmd.setScissor(0, vk::Rect2D{{0, 0}, extent});
     std::vector<Vertex> verts(lines.size() * 2);
     for (size_t i = 0; i < lines.size(); ++i) {
       auto &v0 = verts[i*2], &v1 = verts[i*2+1];
@@ -105,10 +112,9 @@ public:
     auto sz = verts.size() * sizeof(Vertex);
     vk::raii::Buffer vb(dev_, {.size=sz, .usage=vk::BufferUsageFlagBits::eVertexBuffer});
     auto req = vb.getMemoryRequirements();
-    auto mem_props = phys_dev_.getMemoryProperties();
-    auto mem_type = engine::detail::find_memory_type(mem_props, req.memoryTypeBits,
+    auto mem_type = engine::detail::find_memory_type(mem_props_, req.memoryTypeBits,
         vk::MemoryPropertyFlagBits::eHostVisible|vk::MemoryPropertyFlagBits::eHostCoherent);
-    vk::raii::DeviceMemory mem(dev_, {.allocationSize=req.size, .memoryTypeIndex=mem_type});
+    vk::raii::DeviceMemory mem(dev_, vk::MemoryAllocateInfo{.allocationSize=req.size, .memoryTypeIndex=mem_type});
     vb.bindMemory(*mem, 0);
     std::memcpy(mem.mapMemory(0, sz), verts.data(), sz);
     mem.unmapMemory();
@@ -120,7 +126,7 @@ public:
 
 private:
   vk::raii::Device &dev_;
-  vk::raii::PhysicalDevice phys_dev_;
+  vk::PhysicalDeviceMemoryProperties mem_props_;
   vk::raii::PipelineLayout pip_layout_{nullptr};
   vk::raii::Pipeline pip_{nullptr};
 };
