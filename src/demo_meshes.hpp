@@ -85,7 +85,7 @@ inline auto make_cube_mesh(float half = 0.5F) -> engine::MeshSource {
   return make_box_mesh(half, half, half);
 }
 
-[[nodiscard]] inline auto make_sphere_mesh(float radius, int rings = 8, int segments = 12) -> engine::MeshSource {
+[[nodiscard]] inline auto make_sphere_mesh(float radius, int rings = 6, int segments = 8) -> engine::MeshSource {
   engine::MeshSource mesh;
 
   auto v = [&](float x, float y, float z) {
@@ -128,7 +128,7 @@ inline auto make_cube_mesh(float half = 0.5F) -> engine::MeshSource {
 
 [[nodiscard]] inline auto make_capsule_mesh(
     float top_radius, float bottom_radius, float half_height,
-    int segments = 12, int rings = 4) -> engine::MeshSource {
+    int segments = 8, int rings = 4) -> engine::MeshSource {
   engine::MeshSource mesh;
 
   auto v = [&](float x, float y, float z, float nx, float ny, float nz) {
@@ -169,12 +169,12 @@ inline auto make_cube_mesh(float half = 0.5F) -> engine::MeshSource {
     add_ring(y, r, 0.0F);
   }
 
-  // Bottom dome
-  for (int i = 0; i <= rings; ++i) {
+  // Bottom dome: y from -half_height down to bottom pole
+  for (int i = rings; i >= 0; --i) {
     float a = (3.14159265F * 0.5F) * static_cast<float>(i) / static_cast<float>(rings);
     float y = -half_height - bottom_radius * std::cos(a);
     float r = bottom_radius * std::sin(a);
-    add_ring(y, r, -std::cos(a));  // normal Y = -cos(a): -1 at pole, 0 at equator
+    add_ring(y, r, -std::cos(a));
   }
 
   const int total_rings_v = (rings + 1) + 3 + (rings + 1) - 1;  // ring count for index loop
@@ -200,12 +200,12 @@ inline auto make_cube_mesh(float half = 0.5F) -> engine::MeshSource {
 }
 
 inline auto make_capsule_mesh(float radius, float half_height,
-                               int segments = 12, int rings = 4) -> engine::MeshSource {
+                               int segments = 8, int rings = 4) -> engine::MeshSource {
   return make_capsule_mesh(radius, radius, half_height, segments, rings);
 }
 
 [[nodiscard]] inline auto make_cylinder_mesh(float top_radius, float bottom_radius, float half_height,
-                                              int segments = 16) -> engine::MeshSource {
+                                              int segments = 8) -> engine::MeshSource {
   engine::MeshSource mesh;
 
   auto v = [&](float x, float y, float z, float nx, float ny, float nz) {

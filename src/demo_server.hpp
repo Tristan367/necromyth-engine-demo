@@ -39,13 +39,13 @@ public:
         body_id = physics_.add_capsule(desc.p1.x, desc.p2, pos);
         break;
       case app::TestObjShape::TaperedCapsule:
-        body_id = physics_.add_capsule(desc.p1.x, desc.p3, pos); // approximate with capsule
+        body_id = physics_.add_tapered_capsule(desc.p1.x, desc.p2, desc.p3, pos);
         break;
       case app::TestObjShape::Cylinder:
         body_id = physics_.add_cylinder(desc.p1.x, desc.p2, pos);
         break;
       case app::TestObjShape::TaperedCylinder:
-        body_id = physics_.add_cylinder(desc.p1.x, std::max(desc.p2, desc.p3), pos); // approximate
+        body_id = physics_.add_tapered_cylinder(desc.p1.x, desc.p2, desc.p3, pos);
         break;
       }
 

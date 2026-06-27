@@ -219,7 +219,7 @@ void populate_demo_scene(engine::Scene &scene) {
 
   // Character visual (capsule that will follow character position)
   {
-    const engine::MeshSource vis_mesh = app::make_capsule_mesh(0.5F, 0.4F, 12, 4);
+    const engine::MeshSource vis_mesh = app::make_capsule_mesh(0.5F, 0.4F, 8, 4);
     const std::uint32_t vis_mesh_idx = scene.add_mesh(vis_mesh);
     character_sphere_index = scene.add_instance({
         .mesh_index = vis_mesh_idx,
