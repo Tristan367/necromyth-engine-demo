@@ -144,8 +144,9 @@ inline auto make_cube_mesh(float half = 0.5F) -> engine::MeshSource {
   const float two_pi = 2.0F * 3.14159265F;
   const int total_rings = rings * 2 + 2;
 
+  // Generate vertices top-to-bottom (matching sphere order for consistent winding)
   for (int ring = 0; ring <= total_rings; ++ring) {
-    const float y = bottom + (top - bottom) * static_cast<float>(ring) / static_cast<float>(total_rings);
+    const float y = top - (top - bottom) * static_cast<float>(ring) / static_cast<float>(total_rings);
 
     float r, ny;
     if (y < -half_height) {
@@ -176,14 +177,15 @@ inline auto make_cube_mesh(float half = 0.5F) -> engine::MeshSource {
     const int base = ring * segments;
     const int next_base = (ring + 1) * segments;
     for (int seg = 0; seg < segments; ++seg) {
-      const int bl = base + seg;                       // bottom-left
-      const int br = base + (seg + 1) % segments;       // bottom-right
-      const int tl = next_base + seg;                   // top-left
-      const int tr = next_base + (seg + 1) % segments;  // top-right
+      const int tl = base + seg;                       // top-left (base ring = top)
+      const int tr = base + (seg + 1) % segments;       // top-right
+      const int bl = next_base + seg;                   // bottom-left (next ring = below)
+      const int br = next_base + (seg + 1) % segments;  // bottom-right
+      // Same winding as sphere: (tl, br, bl) + (tl, tr, br)
+      mesh.indices.push_back(tl);
+      mesh.indices.push_back(br);
       mesh.indices.push_back(bl);
       mesh.indices.push_back(tl);
-      mesh.indices.push_back(tr);
-      mesh.indices.push_back(bl);
       mesh.indices.push_back(tr);
       mesh.indices.push_back(br);
     }
