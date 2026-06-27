@@ -9,9 +9,14 @@
 
 namespace app {
 
+enum class TestObjShape : std::uint8_t { Box, Sphere, Capsule, Cylinder, TaperedCapsule, TaperedCylinder };
+
 struct PhysicsObjDesc {
   std::uint32_t instance_index;
-  glm::vec3 box_half_extent{0.5F, 0.5F, 0.5F};
+  TestObjShape shape;
+  glm::vec3 p1{0.5F};  // Box: half_extent.  Sphere: radius.  Capsule/Cylinder: half_height
+  float p2{0.5F};       // Capsule/Cylinder: radius.  Tapered: top_radius
+  float p3{0.5F};       // Tapered: bottom_radius
 };
 
 void populate_demo_scene(engine::Scene &scene);

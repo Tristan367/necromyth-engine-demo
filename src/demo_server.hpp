@@ -24,11 +24,32 @@ public:
     for (const app::PhysicsObjDesc &desc : obj_descs) {
       const engine::MeshInstance &inst = scene_.instances()[desc.instance_index];
       const glm::vec3 pos{inst.model[3]};
-      physics_bodies_.push_back({
-          physics_.create_box(desc.box_half_extent, pos,
-                              JPH::EMotionType::Dynamic, engine::physics::Layers::kMoving,
-                              glm::quat(1.0F, 0.0F, 0.0F, 0.0F), 1.0F, 0.7F),
-          desc.instance_index});
+      JPH::BodyID body_id;
+
+      switch (desc.shape) {
+      case app::TestObjShape::Box:
+        body_id = physics_.create_box(desc.p1, pos,
+                        JPH::EMotionType::Dynamic, engine::physics::Layers::kMoving,
+                        glm::quat(1.0F, 0.0F, 0.0F, 0.0F), 1.0F, 0.7F);
+        break;
+      case app::TestObjShape::Sphere:
+        body_id = physics_.add_sphere(desc.p1.x, pos);
+        break;
+      case app::TestObjShape::Capsule:
+        body_id = physics_.add_capsule(desc.p1.x, desc.p2, pos);
+        break;
+      case app::TestObjShape::TaperedCapsule:
+        body_id = physics_.add_capsule(desc.p1.x, desc.p3, pos); // approximate with capsule
+        break;
+      case app::TestObjShape::Cylinder:
+        body_id = physics_.add_cylinder(desc.p1.x, desc.p2, pos);
+        break;
+      case app::TestObjShape::TaperedCylinder:
+        body_id = physics_.add_cylinder(desc.p1.x, std::max(desc.p2, desc.p3), pos); // approximate
+        break;
+      }
+
+      physics_bodies_.push_back({body_id, desc.instance_index});
     }
 
     character_ = std::make_unique<engine::physics::Character>(physics_, glm::vec3{0.0F, 20.0F, 0.0F},

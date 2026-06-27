@@ -320,30 +320,34 @@ void add_physics_test_objects(engine::Scene &scene) {
     const float z = static_cast<float>(std::rand() % 1000) * 0.02F - 10.0F;
 
     engine::MeshSource mesh;
-    glm::vec3 box_half;
+    app::PhysicsObjDesc desc;
 
     switch (shape) {
-    case 0: mesh = app::make_box_mesh(sx, sy, sz); box_half = {sx, sy, sz}; break;
-    case 1: mesh = app::make_sphere_mesh(s); box_half = {s, s, s}; break;
-    case 2: mesh = app::make_capsule_mesh(s, s * 1.5F); box_half = {s, s * 1.5F + s, s}; break;
-    case 3: mesh = app::make_capsule_mesh(s, s * 0.7F, s * 1.2F); box_half = {s, s * 1.2F + std::max(s, s*0.7F), s}; break;
-    case 4: mesh = app::make_cylinder_mesh(s, s, s * 1.2F); box_half = {s, s * 1.2F, s}; break;
-    case 5: mesh = app::make_cylinder_mesh(s * 0.6F, s, s * 1.5F); box_half = {std::max(s*0.6F, s), s * 1.5F, std::max(s*0.6F, s)}; break;
+    case 0: mesh = app::make_box_mesh(sx, sy, sz);
+            desc = {0, app::TestObjShape::Box, glm::vec3(sx, sy, sz)}; break;
+    case 1: mesh = app::make_sphere_mesh(s);
+            desc = {0, app::TestObjShape::Sphere, glm::vec3(s, 0, 0), s}; break;
+    case 2: mesh = app::make_capsule_mesh(s, s * 1.5F);
+            desc = {0, app::TestObjShape::Capsule, glm::vec3(s * 1.5F, 0, 0), s}; break;
+    case 3: mesh = app::make_capsule_mesh(s, s * 0.7F, s * 1.2F);
+            desc = {0, app::TestObjShape::TaperedCapsule, glm::vec3(s * 1.2F, 0, 0), s, s * 0.7F}; break;
+    case 4: mesh = app::make_cylinder_mesh(s, s, s * 1.2F);
+            desc = {0, app::TestObjShape::Cylinder, glm::vec3(s * 1.2F, 0, 0), s}; break;
+    case 5: mesh = app::make_cylinder_mesh(s * 0.6F, s, s * 1.5F);
+            desc = {0, app::TestObjShape::TaperedCylinder, glm::vec3(s * 1.5F, 0, 0), s, s * 0.6F}; break;
     }
 
-    // Color the vertices
     for (auto &vert : mesh.vertices) {
       vert.color[0] = w; vert.color[1] = v; vert.color[2] = b;
     }
 
-    const std::uint32_t mesh_idx = scene.add_mesh(mesh);
-    const std::uint32_t inst_idx = scene.add_instance({
-        .mesh_index = mesh_idx,
+    desc.instance_index = scene.add_instance({
+        .mesh_index = scene.add_mesh(mesh),
         .texture_index = white_tex,
         .model = glm::translate(glm::mat4(1.0F), glm::vec3{x, y, z}),
         .layer = engine::RenderLayer::Opaque,
     });
-    obj_descs.push_back(app::PhysicsObjDesc{inst_idx, box_half});
+    obj_descs.push_back(desc);
   }
 }
 
