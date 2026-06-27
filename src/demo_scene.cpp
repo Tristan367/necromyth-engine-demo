@@ -241,7 +241,7 @@ void populate_demo_scene(engine::Scene &scene) {
       (void)scene.add_instance({
           .mesh_index = mesh_idx,
           .texture_index = tex_idx,
-          .model = glm::mat4(1.0F),
+          .model = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, -3.0F, 0.0F)),
           .layer = engine::RenderLayer::Opaque,
       });
       std::cout << "Loaded trimesh terrain: " << terrain.mesh.vertices.size() << " verts\n";

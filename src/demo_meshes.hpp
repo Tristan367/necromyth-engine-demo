@@ -181,11 +181,11 @@ inline auto make_cube_mesh(float half = 0.5F) -> engine::MeshSource {
       const int next_curr = next_base + seg;
       const int next_next = next_base + (seg + 1) % segments;
       mesh.indices.push_back(curr);
-      mesh.indices.push_back(next_next);
       mesh.indices.push_back(next_curr);
-      mesh.indices.push_back(curr);
-      mesh.indices.push_back(next_seg);
       mesh.indices.push_back(next_next);
+      mesh.indices.push_back(curr);
+      mesh.indices.push_back(next_next);
+      mesh.indices.push_back(next_seg);
     }
   }
 
