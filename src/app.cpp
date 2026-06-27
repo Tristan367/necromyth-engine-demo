@@ -79,8 +79,8 @@ struct DemoApp::Impl {
 
     // Debug line renderer (Jolt wireframe overlay)
     debug_lines_ = std::make_unique<DebugLineRenderer>(
-        vulkan.device_ref(), vulkan.mem_props(), vulkan.color_fmt(), vulkan.depth_fmt(),
-        ENGINE_DEBUG_LINE_SPIRV, vulkan.frame_layout_obj(), vulkan.sample_count());
+        vulkan.device_ref(), vulkan.mem_props(), vulkan.color_fmt(),
+        ENGINE_DEBUG_LINE_SPIRV, vulkan.frame_layout_obj());
 
     std::cout << "Selected GPU: " << vulkan.gpu_name();
     if (config.gpu_device_index)

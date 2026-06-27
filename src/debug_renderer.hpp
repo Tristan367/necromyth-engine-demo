@@ -46,9 +46,8 @@ public:
   struct Vertex { float pos[3]; float color[4]; };
 
   DebugLineRenderer(vk::raii::Device &dev, vk::PhysicalDeviceMemoryProperties mem_props,
-                    vk::Format c_fmt, vk::Format d_fmt,
-                    std::string_view spirv, vk::DescriptorSetLayout frame_layout,
-                    vk::SampleCountFlagBits samples)
+                    vk::Format c_fmt,
+                    std::string_view spirv, vk::DescriptorSetLayout frame_layout)
       : dev_(dev), mem_props_(mem_props) {
     auto code = engine::read_spirv_file(spirv);
     auto vs = engine::create_shader_module(dev, code);
@@ -66,7 +65,7 @@ public:
     const vk::PipelineInputAssemblyStateCreateInfo ia{.topology = vk::PrimitiveTopology::eLineList};
     const vk::PipelineRasterizationStateCreateInfo rs{.polygonMode = vk::PolygonMode::eFill,
         .cullMode = vk::CullModeFlagBits::eNone, .frontFace = vk::FrontFace::eCounterClockwise, .lineWidth = 1.0f};
-    const vk::PipelineMultisampleStateCreateInfo ms{.rasterizationSamples = samples};
+    const vk::PipelineMultisampleStateCreateInfo ms{.rasterizationSamples = vk::SampleCountFlagBits::e1};  // overlay renders into resolved 1-sample image
     const vk::PipelineDepthStencilStateCreateInfo ds{.depthTestEnable = VK_FALSE,
         .depthWriteEnable = VK_FALSE};
     const vk::PipelineColorBlendAttachmentState bl{.colorWriteMask =
@@ -111,17 +110,21 @@ public:
       v1.color[0]=r; v1.color[1]=g; v1.color[2]=b; v1.color[3]=a;
     }
     auto sz = verts.size() * sizeof(Vertex);
-    vk::raii::Buffer vb(dev_, {.size=sz, .usage=vk::BufferUsageFlagBits::eVertexBuffer});
-    auto req = vb.getMemoryRequirements();
-    auto mem_type = engine::detail::find_memory_type(mem_props_, req.memoryTypeBits,
-        vk::MemoryPropertyFlagBits::eHostVisible|vk::MemoryPropertyFlagBits::eHostCoherent);
-    vk::raii::DeviceMemory mem(dev_, vk::MemoryAllocateInfo{.allocationSize=req.size, .memoryTypeIndex=mem_type});
-    vb.bindMemory(*mem, 0);
-    std::memcpy(mem.mapMemory(0, sz), verts.data(), sz);
-    mem.unmapMemory();
+    if (vb_size_ < sz) {
+      vb_ = nullptr; mem_ = nullptr;  // free old before allocating new
+      vb_ = vk::raii::Buffer(dev_, {.size=sz, .usage=vk::BufferUsageFlagBits::eVertexBuffer});
+      auto req = vb_.getMemoryRequirements();
+      auto mem_type = engine::detail::find_memory_type(mem_props_, req.memoryTypeBits,
+          vk::MemoryPropertyFlagBits::eHostVisible|vk::MemoryPropertyFlagBits::eHostCoherent);
+      mem_ = vk::raii::DeviceMemory(dev_, vk::MemoryAllocateInfo{.allocationSize=req.size, .memoryTypeIndex=mem_type});
+      vb_.bindMemory(*mem_, 0);
+      vb_size_ = sz;
+    }
+    std::memcpy(mem_.mapMemory(0, sz), verts.data(), sz);
+    mem_.unmapMemory();
     cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, *pip_);
     cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *pip_layout_, 0, frame_set, nullptr);
-    cmd.bindVertexBuffers(0, *vb, {0});
+    cmd.bindVertexBuffers(0, *vb_, {0});
     cmd.draw(static_cast<uint32_t>(verts.size()), 1, 0, 0);
   }
 
@@ -130,4 +133,7 @@ private:
   vk::PhysicalDeviceMemoryProperties mem_props_;
   vk::raii::PipelineLayout pip_layout_{nullptr};
   vk::raii::Pipeline pip_{nullptr};
+  vk::raii::Buffer vb_{nullptr};
+  vk::raii::DeviceMemory mem_{nullptr};
+  size_t vb_size_ = 0;
 };
