@@ -50,19 +50,7 @@ public:
         break;
       }
 
-      float y_off = 0.0F;
-      if (desc.shape == app::TestObjShape::TaperedCylinder) {
-        float h = 2.0f * desc.p1.x;
-        float tr = desc.p2, br = desc.p3;
-        float tr2 = tr * tr, br2 = br * br;
-        float com = h * (3 * tr2 + 2 * br * tr + br2) / (4.0f * (tr2 + br * tr + br2));
-        y_off = desc.p1.x - com;  // mesh geometric-center → body CoM offset
-      } else if (desc.shape == app::TestObjShape::TaperedCapsule) {
-        // Jolt capsule CoM.y = 0.5*(top-bottom). Mesh geometric center = (top-bottom)/2
-        // (from asymmetric domes). Net offset = -(top-bottom) to align.
-        y_off = desc.p3 - desc.p2;
-      }
-      physics_bodies_.push_back({body_id, desc.instance_index, {}, {}, y_off});
+      physics_bodies_.push_back({body_id, desc.instance_index});
     }
 
     character_ = std::make_unique<engine::physics::Character>(physics_, glm::vec3{0.0F, 20.0F, 0.0F},
@@ -165,9 +153,15 @@ public:
 
     for (auto &pb : physics_bodies_) {
       physics_.sync_body_to_instance(pb.body_id, scene_.instance(pb.instance_index));
-      // Compensate for Jolt CoM offset on tapered shapes
-      if (pb.y_offset != 0.0F) {
-        scene_.instance(pb.instance_index).model[3].y += pb.y_offset;
+      // Body position = CoM. Shift mesh to geometric center.
+      const JPH::Vec3 com = physics_.shape_center_of_mass(pb.body_id);
+      if (!com.IsNearZero()) {
+        const JPH::Quat rot = physics_.body_interface().GetRotation(pb.body_id);
+        const JPH::Vec3 offset = -com;  // geometric center = CoM - CoM_offset
+        const JPH::Vec3 world_off = rot * offset;
+        scene_.instance(pb.instance_index).model[3].x += world_off.GetX();
+        scene_.instance(pb.instance_index).model[3].y += world_off.GetY();
+        scene_.instance(pb.instance_index).model[3].z += world_off.GetZ();
       }
       // Store for interpolation
       const glm::vec3 p = scene_.instances()[pb.instance_index].model[3];
@@ -213,7 +207,6 @@ private:
     std::uint32_t instance_index;
     glm::vec3 prev_pos{0, 0, 0};
     glm::vec3 curr_pos{0, 0, 0};
-    float y_offset = 0.0F;  // geometric-center → CoM offset (Jolt aligns CoM to body position)
   };
 
   struct RenderState {
