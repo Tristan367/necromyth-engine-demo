@@ -56,9 +56,11 @@ public:
         float tr = desc.p2, br = desc.p3;
         float tr2 = tr * tr, br2 = br * br;
         float com = h * (3 * tr2 + 2 * br * tr + br2) / (4.0f * (tr2 + br * tr + br2));
-        y_off = desc.p1.x - com;  // geometric center minus CoM (mesh offset)
+        y_off = desc.p1.x - com;  // mesh geometric-center → body CoM offset
       } else if (desc.shape == app::TestObjShape::TaperedCapsule) {
-        y_off = 0.5f * (desc.p2 - desc.p3);  // CenterOfMass.y = 0.5*(top - bottom)
+        // Jolt capsule CoM.y = 0.5*(top-bottom). Mesh geometric center = (top-bottom)/2
+        // (from asymmetric domes). Net offset = -(top-bottom) to align.
+        y_off = desc.p3 - desc.p2;
       }
       physics_bodies_.push_back({body_id, desc.instance_index, {}, {}, y_off});
     }
