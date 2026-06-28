@@ -111,6 +111,19 @@ public:
     return "";
   }
 
+  [[nodiscard]] auto raycast_all(const glm::vec3 &origin, const glm::vec3 &dir) -> std::string {
+    JPH::RRayCast ray{JPH::RVec3(origin.x, origin.y, origin.z),
+                       JPH::Vec3(dir.x, dir.y, dir.z)};
+    JPH::RayCastResult hit;
+    if (physics_.physics_system().GetNarrowPhaseQuery().CastRay(ray, hit)) {
+      for (auto &[skin_idx, mgr] : hitbox_managers_)
+        if (auto *name = mgr->find_name(hit.mBodyID))
+          return *name;
+      return "world";
+    }
+    return "";
+  }
+
   void tick(float delta, float input_forward, float input_right, bool input_jump) {
     for (engine::MeshInstance &instance : scene_.instances()) {
       if (instance.skin_index == engine::k_invalid_skin_index)

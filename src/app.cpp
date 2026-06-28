@@ -131,8 +131,8 @@ void DemoApp::run() {
           !impl.debug_ui.wants_mouse()) {
         const glm::vec3 look = impl.fly_camera.forward();
         const glm::vec3 pos = impl.scene.camera().position();
-        const std::string hit = impl.server.raycast_hitbox(pos, look);
-        if (!hit.empty())
+        const std::string hit = impl.server.raycast_all(pos, look);
+        if (!hit.empty() && hit != "world")
           std::cout << "hit: " << hit << '\n';
       }
 
