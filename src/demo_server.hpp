@@ -277,19 +277,24 @@ private:
       const engine::SkeletonAsset &skel = scene_.skeletons()[instance.skin_index];
       const engine::AnimationClip &clip = scene_.animations()[instance.animation_index];
 
-      std::vector<glm::mat4> bone_worlds;
+      std::vector<glm::mat4> bone_worlds_local;
       std::vector<glm::mat4> unused_joint_matrices;
       if (instance.next_animation_index < scene_.animations().size())
         engine::compute_joint_matrices_blended(
             skel, clip, instance.animation_time,
             scene_.animations()[instance.next_animation_index],
             instance.next_animation_time, instance.blend_factor,
-            unused_joint_matrices, &bone_worlds);
+            unused_joint_matrices, &bone_worlds_local);
       else
         engine::compute_joint_matrices(skel, clip, instance.animation_time,
-                                        unused_joint_matrices, &bone_worlds);
+                                        unused_joint_matrices, &bone_worlds_local);
 
-      it->second->update(skel, bone_worlds);
+      // Convert model-local bone transforms to world space
+      const glm::mat4 &model = instance.model;
+      for (glm::mat4 &bw : bone_worlds_local)
+        bw = model * bw;
+
+      it->second->update(skel, bone_worlds_local);
     }
   }
 
