@@ -68,12 +68,8 @@ struct DemoApp::Impl {
     vulkan.set_frame_overlay([this](const engine::FrameOverlayContext &context) {
       debug_ui.record_overlay(context);
       if (debug_lines_ && server.debug_active()) {
-        // Test crosshair (red=Y, green=X, blue=Z) at origin
-        static std::vector<JoltDebugRenderer::Line> test = {{
-            {{-5,0,0},{5,0,0}, 0xFF0000FF}, {{0,-5,0},{0,5,0}, 0x00FF00FF}, {{0,0,-5},{0,0,5}, 0x0000FFFF}}};
-        debug_lines_->draw(context.command_buffer, vulkan.frame_set_obj(context.frame_index), test, context.extent);
-        // Jolt wireframes
-        debug_lines_->draw(context.command_buffer, vulkan.frame_set_obj(context.frame_index), server.debug_lines(), context.extent);
+        debug_lines_->draw(context.command_buffer, vulkan.frame_set_obj(context.frame_index),
+                           context.frame_index, server.debug_lines(), context.extent);
       }
     });
 

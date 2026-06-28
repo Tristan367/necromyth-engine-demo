@@ -14,6 +14,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <optional>
 #include <vector>
 
 #include <atomic>
@@ -99,6 +100,8 @@ class DebugLineRenderer {
 public:
   struct Vertex { float pos[3]; float color[4]; };
 
+  static constexpr std::uint32_t k_frames_in_flight = 2;
+
   DebugLineRenderer(vk::raii::Device &dev, vk::PhysicalDeviceMemoryProperties mem_props,
                     vk::Format c_fmt,
                     std::string_view spirv, vk::DescriptorSetLayout frame_layout)
@@ -148,6 +151,7 @@ public:
   }
 
   void draw(vk::raii::CommandBuffer &cmd, vk::DescriptorSet frame_set,
+            std::uint32_t frame_idx,
             const std::vector<JoltDebugRenderer::Line> &lines, vk::Extent2D extent) {
     if (lines.empty() || extent.width == 0 || extent.height == 0) return;
 
@@ -164,21 +168,24 @@ public:
       v1.color[0]=r; v1.color[1]=g; v1.color[2]=b; v1.color[3]=a;
     }
     auto sz = verts.size() * sizeof(Vertex);
-    if (vb_size_ < sz) {
-      vb_ = nullptr; mem_ = nullptr;  // free old before allocating new
-      vb_ = vk::raii::Buffer(dev_, {.size=sz, .usage=vk::BufferUsageFlagBits::eVertexBuffer});
-      auto req = vb_.getMemoryRequirements();
+    auto &vb = vb_[frame_idx];
+    auto &mem = mem_[frame_idx];
+    auto &cur_size = vb_size_[frame_idx];
+    if (cur_size < sz) {
+      vb.reset(); mem.reset();
+      vb.emplace(dev_, vk::BufferCreateInfo{.size=sz, .usage=vk::BufferUsageFlagBits::eVertexBuffer});
+      auto req = vb->getMemoryRequirements();
       auto mem_type = engine::detail::find_memory_type(mem_props_, req.memoryTypeBits,
           vk::MemoryPropertyFlagBits::eHostVisible|vk::MemoryPropertyFlagBits::eHostCoherent);
-      mem_ = vk::raii::DeviceMemory(dev_, vk::MemoryAllocateInfo{.allocationSize=req.size, .memoryTypeIndex=mem_type});
-      vb_.bindMemory(*mem_, 0);
-      vb_size_ = sz;
+      mem.emplace(dev_, vk::MemoryAllocateInfo{.allocationSize=req.size, .memoryTypeIndex=mem_type});
+      vb->bindMemory(**mem, 0);
+      cur_size = sz;
     }
-    std::memcpy(mem_.mapMemory(0, sz), verts.data(), sz);
-    mem_.unmapMemory();
+    std::memcpy(mem->mapMemory(0, sz), verts.data(), sz);
+    mem->unmapMemory();
     cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, *pip_);
     cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *pip_layout_, 0, frame_set, nullptr);
-    cmd.bindVertexBuffers(0, *vb_, {0});
+    cmd.bindVertexBuffers(0, **vb, {0});
     cmd.draw(static_cast<uint32_t>(verts.size()), 1, 0, 0);
   }
 
@@ -187,7 +194,7 @@ private:
   vk::PhysicalDeviceMemoryProperties mem_props_;
   vk::raii::PipelineLayout pip_layout_{nullptr};
   vk::raii::Pipeline pip_{nullptr};
-  vk::raii::Buffer vb_{nullptr};
-  vk::raii::DeviceMemory mem_{nullptr};
-  size_t vb_size_ = 0;
+  std::array<std::optional<vk::raii::Buffer>, k_frames_in_flight> vb_{};
+  std::array<std::optional<vk::raii::DeviceMemory>, k_frames_in_flight> mem_{};
+  std::array<size_t, k_frames_in_flight> vb_size_{};
 };
