@@ -239,12 +239,8 @@ public:
       pb.curr_pos = p;
     }
 
-    if (debug_enabled_) {
-      debug_renderer_.clear();
-
-    // Update manual bone controls
+    // Update manual bone controls (every frame, not just debug)
     if (bone_mask_.entries.size() >= 11) {
-      // Head (joint 4) faces camera
       {
         auto &ctrl = bone_mask_.entries[4];
         const glm::vec3 head_pos = character_->position() + glm::vec3{0, 1.6f, 0};
@@ -252,7 +248,6 @@ public:
         const float yaw = std::atan2(to_cam.x, to_cam.z);
         ctrl.manual_trs.rotation = glm::angleAxis(yaw, glm::vec3{0, 1, 0});
       }
-      // Right hand (joint 10) wiggles
       {
         auto &ctrl = bone_mask_.entries[10];
         const float t = static_cast<float>(SDL_GetTicks()) * 0.001f;
@@ -261,6 +256,8 @@ public:
       }
     }
 
+    if (debug_enabled_) {
+      debug_renderer_.clear();
       for (auto &pb : physics_bodies_) {
         JPH::BodyLockRead lock(physics_.physics_system().GetBodyLockInterface(), pb.body_id);
         if (!lock.Succeeded()) continue;
