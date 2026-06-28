@@ -127,6 +127,15 @@ void DemoApp::run() {
 
       impl.input.process_event(event, impl.debug_ui, impl.fly_camera);
 
+      if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT &&
+          !impl.debug_ui.wants_mouse()) {
+        const glm::vec3 look = impl.fly_camera.forward();
+        const glm::vec3 pos = impl.scene.camera().position();
+        const std::string hit = impl.server.raycast_hitbox(pos, look);
+        if (!hit.empty())
+          std::cout << "hit: " << hit << '\n';
+      }
+
       if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_E &&
           !impl.debug_ui.wants_keyboard())
         toggle_demo_animation(impl.scene);

@@ -1,0 +1,53 @@
+{
+  "body": {
+    "shape": "capsule",
+    "half_height": 0.4,
+    "radius": 0.5,
+    "offset": [0, 0.4, 0]
+  },
+  "hitboxes": [
+    {
+      "name": "Noggin",
+      "bone": "mixamorig:Head",
+      "shape": "sphere",
+      "offset": [0, 0.15, 0],
+      "radius": 0.25
+    },
+    {
+      "name": "Breadbasket",
+      "bone": "mixamorig:Spine2",
+      "shape": "capsule",
+      "offset": [0, 0, 0],
+      "radius": 0.3,
+      "half_height": 0.4
+    },
+    {
+      "name": "Fisticuffs L",
+      "bone": "mixamorig:LeftHand",
+      "shape": "sphere",
+      "offset": [0, 0, 0],
+      "radius": 0.15
+    },
+    {
+      "name": "Fisticuffs R",
+      "bone": "mixamorig:RightHand",
+      "shape": "sphere",
+      "offset": [0, 0, 0],
+      "radius": 0.15
+    },
+    {
+      "name": "Kickstand L",
+      "bone": "mixamorig:LeftFoot",
+      "shape": "box",
+      "offset": [0, 0.1, 0],
+      "half_extent": [0.12, 0.1, 0.25]
+    },
+    {
+      "name": "Kickstand R",
+      "bone": "mixamorig:RightFoot",
+      "shape": "box",
+      "offset": [0, 0.1, 0],
+      "half_extent": [0.12, 0.1, 0.25]
+    }
+  ]
+}

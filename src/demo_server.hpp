@@ -2,13 +2,19 @@
 
 #include "demo_scene.hpp"
 #include "debug_renderer.hpp"
+#include "physics/hitbox_manager.hpp"
 #include "physics/physics_world.hpp"
 #include "scene/animation_utils.hpp"
 #include "scene/scene.hpp"
 
+#include <Jolt/Physics/Collision/CastResult.h>
+#include <Jolt/Physics/Collision/RayCast.h>
+
 #include <cmath>
 #include <cstdint>
 #include <iostream>
+#include <memory>
+#include <unordered_map>
 #include <vector>
 
 class DemoServer {
@@ -53,12 +59,33 @@ public:
       physics_bodies_.push_back({body_id, desc.instance_index});
     }
 
+    constexpr float k_default_char_radius = 0.5F;
+    constexpr float k_default_char_height = 0.8F;
+    float char_radius = k_default_char_radius;
+    float char_height = k_default_char_height;
+
+    for (const engine::SkeletonAsset &skel : scene_.skeletons()) {
+      if (skel.body_collider) {
+        const engine::BodyColliderDef &def = *skel.body_collider;
+        if (def.shape == engine::BodyColliderDef::Shape::Capsule) {
+          char_radius = def.radius;
+          char_height = def.half_height * 2.0F;
+        }
+      }
+      if (!skel.hitboxes.empty()) {
+        auto mgr = std::make_unique<engine::physics::HitboxManager>(physics_, skel);
+        hitbox_managers_[static_cast<std::uint32_t>(
+            std::distance(scene_.skeletons().data(), &skel))] = std::move(mgr);
+      }
+    }
+
     character_ = std::make_unique<engine::physics::Character>(physics_, glm::vec3{0.0F, 20.0F, 0.0F},
-                                                                0.5F, 0.8F);
+                                                                char_radius, char_height);
     character_->set_max_strength(20.0F);
     std::cout << "Physics: " << obj_descs.size() << " objects, "
               << (trimesh_source && !trimesh_source->vertices.empty() ? "trimesh ground" : "ground plane")
-              << "\nCharacter at y=20\n";
+              << "\nCharacter at y=20\n"
+              << "Hitbox managers: " << hitbox_managers_.size() << "\n";
   }
 
   [[nodiscard]] auto character_position(float interp_alpha = 0.0F) const -> glm::vec3 {
@@ -70,6 +97,18 @@ public:
   [[nodiscard]] auto debug_active() const -> bool { return debug_enabled_; }
   [[nodiscard]] auto debug_lines() const -> const std::vector<JoltDebugRenderer::Line> & {
     return debug_renderer_.lines();
+  }
+
+  [[nodiscard]] auto raycast_hitbox(const glm::vec3 &origin, const glm::vec3 &dir) -> std::string {
+    JPH::RRayCast ray{JPH::RVec3(origin.x, origin.y, origin.z),
+                       JPH::Vec3(dir.x, dir.y, dir.z)};
+    JPH::RayCastResult hit;
+    const JPH::SpecifiedBroadPhaseLayerFilter bp_filter{engine::physics::BroadPhaseLayers::kHitbox};
+    if (physics_.physics_system().GetNarrowPhaseQuery().CastRay(ray, hit, bp_filter))
+      for (auto &[skin_idx, mgr] : hitbox_managers_)
+        if (auto *name = mgr->find_name(hit.mBodyID))
+          return *name;
+    return "";
   }
 
   void tick(float delta, float input_forward, float input_right, bool input_jump) {
@@ -185,7 +224,19 @@ public:
       cs->Draw(&debug_renderer_,
                JPH::RMat44::sTranslation(JPH::RVec3(cp.x, cp.y, cp.z)),
                JPH::Vec3::sReplicate(1.0F), JPH::Color::sRed, false, true);
+      // Hitbox bodies (already in Jolt, just needs to be drawn)
+      for (auto &[skin_idx, mgr] : hitbox_managers_) {
+        for (const auto &hb : mgr->hitbox_bodies()) {
+          JPH::BodyLockRead lock(physics_.physics_system().GetBodyLockInterface(), hb.body_id);
+          if (!lock.Succeeded()) continue;
+          const JPH::Shape *s = lock.GetBody().GetShape();
+          s->Draw(&debug_renderer_, lock.GetBody().GetWorldTransform(),
+                  JPH::Vec3::sReplicate(1.0F), JPH::Color::sYellow, false, true);
+        }
+      }
     }
+
+    update_hitboxes();
   }
 
   void apply_interpolation(float alpha) {
@@ -202,6 +253,33 @@ public:
   }
 
 private:
+  void update_hitboxes() {
+    for (const engine::MeshInstance &instance : scene_.instances()) {
+      if (instance.skin_index >= scene_.skeletons().size()) continue;
+      if (instance.animation_index >= scene_.animations().size()) continue;
+
+      auto it = hitbox_managers_.find(instance.skin_index);
+      if (it == hitbox_managers_.end()) continue;
+
+      const engine::SkeletonAsset &skel = scene_.skeletons()[instance.skin_index];
+      const engine::AnimationClip &clip = scene_.animations()[instance.animation_index];
+
+      std::vector<glm::mat4> bone_worlds;
+      std::vector<glm::mat4> unused_joint_matrices;
+      if (instance.next_animation_index < scene_.animations().size())
+        engine::compute_joint_matrices_blended(
+            skel, clip, instance.animation_time,
+            scene_.animations()[instance.next_animation_index],
+            instance.next_animation_time, instance.blend_factor,
+            unused_joint_matrices, &bone_worlds);
+      else
+        engine::compute_joint_matrices(skel, clip, instance.animation_time,
+                                        unused_joint_matrices, &bone_worlds);
+
+      it->second->update(skel, bone_worlds);
+    }
+  }
+
   struct PhysicsEntry {
     JPH::BodyID body_id;
     std::uint32_t instance_index;
@@ -221,6 +299,7 @@ private:
   std::uint32_t character_instance_{};
   RenderState render_state_;
   std::vector<PhysicsEntry> physics_bodies_;
+  std::unordered_map<std::uint32_t, std::unique_ptr<engine::physics::HitboxManager>> hitbox_managers_;
   glm::vec3 smoothed_input_{0, 0, 0};
   JoltDebugRenderer debug_renderer_;
   bool debug_enabled_{false};
