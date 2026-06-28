@@ -164,8 +164,10 @@ public:
       auto &v0 = verts[i*2], &v1 = verts[i*2+1];
       v0.pos[0]=lines[i].from[0]; v0.pos[1]=lines[i].from[1]; v0.pos[2]=lines[i].from[2];
       v1.pos[0]=lines[i].to[0]; v1.pos[1]=lines[i].to[1]; v1.pos[2]=lines[i].to[2];
-      float r=((lines[i].color>>24)&0xFF)/255.f, g=((lines[i].color>>16)&0xFF)/255.f;
-      float b=((lines[i].color>>8)&0xFF)/255.f, a=(lines[i].color&0xFF)/255.f;
+      float r = ((lines[i].color       ) & 0xFFU) / 255.f;  // Jolt: 0xAABBGGRR
+      float g = ((lines[i].color >> 8)  & 0xFFU) / 255.f;
+      float b = ((lines[i].color >> 16) & 0xFFU) / 255.f;
+      float a = ((lines[i].color >> 24) & 0xFFU) / 255.f;
       v0.color[0]=r; v0.color[1]=g; v0.color[2]=b; v0.color[3]=a;
       v1.color[0]=r; v1.color[1]=g; v1.color[2]=b; v1.color[3]=a;
     }

@@ -142,6 +142,10 @@ void load_model_metadata(const std::string &gltf_path, engine::SkeletonAsset &sk
 
       skeleton.hitboxes.push_back(std::move(a));
     }
+    if (!skeleton.hitboxes.empty())
+      std::cout << "Loaded " << skeleton.hitboxes.size()
+                << " hitboxes for " << p.stem().string() << " ("
+                << skeleton.joint_names.size() << " bones)\n";
   }
 }
 

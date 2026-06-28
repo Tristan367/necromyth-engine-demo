@@ -8,14 +8,14 @@
   "hitboxes": [
     {
       "name": "Noggin",
-      "bone": "mixamorig:Head",
+      "bone": 4,
       "shape": "sphere",
       "offset": [0, 0.15, 0],
       "radius": 0.25
     },
     {
       "name": "Breadbasket",
-      "bone": "mixamorig:Spine2",
+      "bone": 2,
       "shape": "capsule",
       "offset": [0, 0, 0],
       "radius": 0.3,
@@ -23,30 +23,30 @@
     },
     {
       "name": "Fisticuffs L",
-      "bone": "mixamorig:LeftHand",
+      "bone": 8,
       "shape": "sphere",
       "offset": [0, 0, 0],
       "radius": 0.15
     },
     {
       "name": "Fisticuffs R",
-      "bone": "mixamorig:RightHand",
+      "bone": 10,
       "shape": "sphere",
       "offset": [0, 0, 0],
       "radius": 0.15
     },
     {
       "name": "Kickstand L",
-      "bone": "mixamorig:LeftFoot",
+      "bone": 0,
       "shape": "box",
-      "offset": [0, 0.1, 0],
+      "offset": [0, -0.1, 0.1],
       "half_extent": [0.12, 0.1, 0.25]
     },
     {
       "name": "Kickstand R",
-      "bone": "mixamorig:RightFoot",
+      "bone": 0,
       "shape": "box",
-      "offset": [0, 0.1, 0],
+      "offset": [0, -0.1, -0.1],
       "half_extent": [0.12, 0.1, 0.25]
     }
   ]
