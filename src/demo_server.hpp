@@ -256,8 +256,6 @@ public:
       }
     }
 
-    update_hitboxes();
-
     if (debug_enabled_) {
       debug_renderer_.clear();
       for (auto &pb : physics_bodies_) {
@@ -285,6 +283,8 @@ public:
         }
       }
     }
+
+    update_hitboxes();
   }
 
   void apply_interpolation(float alpha) {
