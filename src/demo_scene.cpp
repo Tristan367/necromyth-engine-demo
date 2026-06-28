@@ -333,7 +333,7 @@ void add_physics_test_objects(engine::Scene &scene) {
             desc = {0, app::TestObjShape::TaperedCapsule, glm::vec3(s * 1.2F, 0, 0), s, s * 0.7F}; break;
     case 4: mesh = app::make_cylinder_mesh(s, s, s * 1.2F);
             desc = {0, app::TestObjShape::Cylinder, glm::vec3(s * 1.2F, 0, 0), s}; break;
-    case 5: mesh = app::make_cylinder_mesh(s * 0.6F, s, s * 1.5F);
+    case 5: mesh = app::make_cylinder_mesh(s, s * 0.6F, s * 1.5F);
             desc = {0, app::TestObjShape::TaperedCylinder, glm::vec3(s * 1.5F, 0, 0), s, s * 0.6F}; break;
     }
 
