@@ -6,16 +6,48 @@
     "offset": [0, 0.4, 0]
   },
   "hitboxes": [
-    {"name": "Root",       "bone": 0,  "shape": "sphere", "offset": [0,0,0], "radius": 0.12},
-    {"name": "Spine",      "bone": 1,  "shape": "sphere", "offset": [0,0,0], "radius": 0.10},
-    {"name": "Chest",      "bone": 2,  "shape": "sphere", "offset": [0,0,0], "radius": 0.10},
-    {"name": "Neck",       "bone": 3,  "shape": "sphere", "offset": [0,0,0], "radius": 0.08},
-    {"name": "Head",       "bone": 4,  "shape": "sphere", "offset": [0,0,0], "radius": 0.15},
-    {"name": "R_UpperArm", "bone": 5,  "shape": "sphere", "offset": [0,0,0], "radius": 0.08},
-    {"name": "L_UpperArm", "bone": 6,  "shape": "sphere", "offset": [0,0,0], "radius": 0.08},
-    {"name": "R_Forearm",  "bone": 9,  "shape": "sphere", "offset": [0,0,0], "radius": 0.07},
-    {"name": "L_Forearm",  "bone": 7,  "shape": "sphere", "offset": [0,0,0], "radius": 0.07},
-    {"name": "R_Hand",     "bone": 10, "shape": "sphere", "offset": [0,0,0], "radius": 0.06},
-    {"name": "L_Hand",     "bone": 8,  "shape": "sphere", "offset": [0,0,0], "radius": 0.06}
+    {
+      "name": "Noggin",
+      "bone": 4,
+      "shape": "sphere",
+      "offset": [0, 0, 0],
+      "radius": 0.25
+    },
+    {
+      "name": "Breadbasket",
+      "bone": 2,
+      "shape": "capsule",
+      "offset": [0, 0, 0],
+      "radius": 0.3,
+      "half_height": 0.4
+    },
+    {
+      "name": "Fisticuffs L",
+      "bone": 8,
+      "shape": "sphere",
+      "offset": [0, 0, 0],
+      "radius": 0.15
+    },
+    {
+      "name": "Fisticuffs R",
+      "bone": 10,
+      "shape": "sphere",
+      "offset": [0, 0, 0],
+      "radius": 0.15
+    },
+    {
+      "name": "Kickstand L",
+      "bone": 0,
+      "shape": "box",
+      "offset": [0, 0, 0],
+      "half_extent": [0.12, 0.1, 0.25]
+    },
+    {
+      "name": "Kickstand R",
+      "bone": 0,
+      "shape": "box",
+      "offset": [0, 0, 0],
+      "half_extent": [0.12, 0.1, 0.25]
+    }
   ]
 }

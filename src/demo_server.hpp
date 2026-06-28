@@ -86,24 +86,6 @@ public:
               << (trimesh_source && !trimesh_source->vertices.empty() ? "trimesh ground" : "ground plane")
               << "\nCharacter at y=20\n"
               << "Hitbox managers: " << hitbox_managers_.size() << "\n";
-
-    // Set up animation mask for the animation test model
-    for (std::size_t i = 0; i < scene_.skeletons().size(); ++i) {
-      if (scene_.skeletons()[i].hitboxes.empty()) continue;
-      const auto jc = static_cast<std::size_t>(scene_.skeletons()[i].joint_nodes.size());
-      bone_mask_.auto_all(jc);
-      // Upper body: chest(2), neck(3), head(4), arms(5-10) → secondary clip
-      for (std::uint32_t j : {2U, 3U, 4U, 5U, 6U, 7U, 8U, 9U, 10U})
-        bone_mask_.set_secondary(j);
-      // Head and right hand: manual override (set each frame in tick)
-      bone_mask_.set_manual(4, {});
-      bone_mask_.set_manual(10, {});
-      // Wire mask to instances
-      for (engine::MeshInstance &inst : scene_.instances())
-        if (inst.skin_index == static_cast<std::uint32_t>(i))
-          inst.bone_mask = &bone_mask_;
-      break;
-    }
   }
 
   [[nodiscard]] auto character_position(float interp_alpha = 0.0F) const -> glm::vec3 {
@@ -241,26 +223,6 @@ public:
 
     if (debug_enabled_) {
       debug_renderer_.clear();
-
-    // Update manual bone controls
-    if (bone_mask_.entries.size() >= 11) {
-      // Head (joint 4) faces camera
-      {
-        auto &ctrl = bone_mask_.entries[4];
-        const glm::vec3 head_pos = character_->position() + glm::vec3{0, 1.6f, 0};
-        const glm::vec3 to_cam = glm::normalize(camera_pos_ - head_pos);
-        const float yaw = std::atan2(to_cam.x, to_cam.z);
-        ctrl.manual_trs.rotation = glm::angleAxis(yaw, glm::vec3{0, 1, 0});
-      }
-      // Right hand (joint 10) wiggles
-      {
-        auto &ctrl = bone_mask_.entries[10];
-        const float t = static_cast<float>(SDL_GetTicks()) * 0.001f;
-        ctrl.manual_trs.rotation =
-            glm::angleAxis(std::sin(t * 6.0f) * 0.8f, glm::vec3{1, 0, 0});
-      }
-    }
-
       for (auto &pb : physics_bodies_) {
         JPH::BodyLockRead lock(physics_.physics_system().GetBodyLockInterface(), pb.body_id);
         if (!lock.Succeeded()) continue;
@@ -303,11 +265,9 @@ public:
     cm[3] = glm::vec4(cp.x, cp.y, cp.z, 1.0F);
   }
 
-  void set_camera_position(const glm::vec3 &cam_pos) { camera_pos_ = cam_pos; }
-
 private:
   void update_hitboxes() {
-    for (engine::MeshInstance &instance : scene_.instances()) {
+    for (const engine::MeshInstance &instance : scene_.instances()) {
       if (instance.skin_index >= scene_.skeletons().size()) continue;
       if (instance.animation_index >= scene_.animations().size()) continue;
 
@@ -315,29 +275,21 @@ private:
       if (it == hitbox_managers_.end()) continue;
 
       const engine::SkeletonAsset &skel = scene_.skeletons()[instance.skin_index];
-      const engine::AnimationClip &clip_a = scene_.animations()[instance.animation_index];
+      const engine::AnimationClip &clip = scene_.animations()[instance.animation_index];
 
       std::vector<glm::mat4> bone_worlds_local;
       std::vector<glm::mat4> unused_joint_matrices;
-      if (instance.bone_mask) {
-        const engine::AnimationClip &clip_b = instance.next_animation_index < scene_.animations().size()
-            ? scene_.animations()[instance.next_animation_index] : clip_a;
-        engine::compute_joint_matrices_masked(
-            skel, *instance.bone_mask,
-            clip_a, instance.animation_time,
-            clip_b, instance.next_animation_time,
-            unused_joint_matrices, &bone_worlds_local);
-      } else if (instance.next_animation_index < scene_.animations().size()) {
+      if (instance.next_animation_index < scene_.animations().size())
         engine::compute_joint_matrices_blended(
-            skel, clip_a, instance.animation_time,
+            skel, clip, instance.animation_time,
             scene_.animations()[instance.next_animation_index],
             instance.next_animation_time, instance.blend_factor,
             unused_joint_matrices, &bone_worlds_local);
-      } else {
-        engine::compute_joint_matrices(skel, clip_a, instance.animation_time,
+      else
+        engine::compute_joint_matrices(skel, clip, instance.animation_time,
                                         unused_joint_matrices, &bone_worlds_local);
-      }
 
+      // Convert model-local bone transforms to world space
       const glm::mat4 &model = instance.model;
       for (glm::mat4 &bw : bone_worlds_local)
         bw = model * bw;
@@ -366,9 +318,7 @@ private:
   RenderState render_state_;
   std::vector<PhysicsEntry> physics_bodies_;
   std::unordered_map<std::uint32_t, std::unique_ptr<engine::physics::HitboxManager>> hitbox_managers_;
-  engine::AnimationMask bone_mask_;
   glm::vec3 smoothed_input_{0, 0, 0};
-  glm::vec3 camera_pos_{0, 0, 20};
   JoltDebugRenderer debug_renderer_;
   bool debug_enabled_{false};
 };

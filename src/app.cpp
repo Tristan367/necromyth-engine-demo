@@ -203,7 +203,6 @@ void DemoApp::run() {
           glm::vec3(char_pos.x, char_pos.y + 1.5F, char_pos.z),
           glm::vec3(char_pos.x, char_pos.y + 1.5F, char_pos.z) + look_fwd);
     }
-    impl.server.set_camera_position(impl.scene.camera().position());
 
     const UiFrameResult ui = impl.debug_ui.begin_frame(impl.scene, delta_seconds, menu_open);
 
