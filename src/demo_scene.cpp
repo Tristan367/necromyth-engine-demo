@@ -279,11 +279,17 @@ void toggle_demo_animation(engine::Scene &scene) {
     if (instance.skin_index == engine::k_invalid_skin_index)
       continue;
     const std::uint32_t anim_count = static_cast<std::uint32_t>(scene.animations().size());
-    const std::uint32_t next = (instance.animation_index + 1) % anim_count;
-    instance.next_animation_index = next;
-    instance.next_animation_time = 0.0F;
-    instance.blend_factor = 0.0F;
-    std::cout << "Crossfading to: " << scene.animations()[next].name << '\n';
+    if (instance.next_animation_index >= anim_count) {
+      // First press: activate split, secondary bones play other clip
+      instance.next_animation_index = (instance.animation_index + 1) % anim_count;
+      instance.next_animation_time = 0.0F;
+    } else {
+      // Subsequent presses: swap primary ↔ secondary
+      std::swap(instance.animation_index, instance.next_animation_index);
+      std::swap(instance.animation_time, instance.next_animation_time);
+    }
+    std::cout << "Primary: " << scene.animations()[instance.animation_index].name
+              << "  Secondary: " << scene.animations()[instance.next_animation_index].name << '\n';
   }
 }
 

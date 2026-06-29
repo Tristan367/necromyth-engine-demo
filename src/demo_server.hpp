@@ -86,6 +86,10 @@ public:
               << (trimesh_source && !trimesh_source->vertices.empty() ? "trimesh ground" : "ground plane")
               << "\nCharacter at y=20\n"
               << "Hitbox managers: " << hitbox_managers_.size() << "\n";
+
+    for (engine::MeshInstance &inst : scene_.instances())
+      if (inst.skin_index != engine::k_invalid_skin_index)
+        inst.secondary_joints = &secondary_joints_;
   }
 
   [[nodiscard]] auto character_position(float interp_alpha = 0.0F) const -> glm::vec3 {
@@ -279,15 +283,25 @@ private:
 
       std::vector<glm::mat4> bone_worlds_local;
       std::vector<glm::mat4> unused_joint_matrices;
-      if (instance.next_animation_index < scene_.animations().size())
+      if (instance.secondary_joints && !instance.secondary_joints->empty() &&
+          instance.next_animation_index < scene_.animations().size()) {
+        engine::compute_joint_matrices_split(
+            skel,
+            clip, instance.animation_time,
+            scene_.animations()[instance.next_animation_index],
+            instance.next_animation_time,
+            *instance.secondary_joints,
+            unused_joint_matrices, &bone_worlds_local);
+      } else if (instance.next_animation_index < scene_.animations().size()) {
         engine::compute_joint_matrices_blended(
             skel, clip, instance.animation_time,
             scene_.animations()[instance.next_animation_index],
             instance.next_animation_time, instance.blend_factor,
             unused_joint_matrices, &bone_worlds_local);
-      else
+      } else {
         engine::compute_joint_matrices(skel, clip, instance.animation_time,
                                         unused_joint_matrices, &bone_worlds_local);
+      }
 
       // Convert model-local bone transforms to world space
       const glm::mat4 &model = instance.model;
@@ -318,6 +332,7 @@ private:
   RenderState render_state_;
   std::vector<PhysicsEntry> physics_bodies_;
   std::unordered_map<std::uint32_t, std::unique_ptr<engine::physics::HitboxManager>> hitbox_managers_;
+  std::vector<std::uint32_t> secondary_joints_{2, 3, 4, 5, 6, 7, 8, 9, 10}; // upper body bones
   glm::vec3 smoothed_input_{0, 0, 0};
   JoltDebugRenderer debug_renderer_;
   bool debug_enabled_{false};
