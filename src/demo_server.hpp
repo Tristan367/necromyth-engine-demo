@@ -88,8 +88,11 @@ public:
               << "Hitbox managers: " << hitbox_managers_.size() << "\n";
 
     for (engine::MeshInstance &inst : scene_.instances())
-      if (inst.skin_index != engine::k_invalid_skin_index)
+      if (inst.skin_index != engine::k_invalid_skin_index) {
         inst.secondary_joints = &secondary_joints_;
+        inst.next_animation_index = (inst.animation_index + 1) % static_cast<std::uint32_t>(scene_.animations().size());
+        inst.next_animation_time = 0.0F;
+      }
   }
 
   [[nodiscard]] auto character_position(float interp_alpha = 0.0F) const -> glm::vec3 {
