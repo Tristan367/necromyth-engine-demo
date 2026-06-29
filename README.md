@@ -40,11 +40,48 @@ Each import path is exercised with real assets from `~/3D Models`:
 
 ## Controls
 
-**Menu (default):** cursor visible. **Resume** or **Esc** enters fly mode (cursor hidden). **Esc** again opens the menu. **Quit** exits from the menu (window close and Ctrl+C still work).
+| Key | Action |
+|-----|--------|
+| Tab | Toggle character mode (third-person character controller) |
+| Esc | Menu / resume fly mode (cursor visible/hidden) |
+| F3 | Toggle Jolt debug wireframes — physics bodies (green), hitboxes (yellow), character capsule (red) |
+| Left-click | Raycast from camera center against all physics bodies; prints hitbox name on character hits |
+| E | Swap primary/secondary animation (per-bone split swaps upper/lower body clip assignment) |
+| WASD | Move (fly mode or character mode) |
+| Space/C | Up/down (fly mode), jump (character mode) |
+| Shift | Sprint |
+| Quit | Menu → Quit, window close, or Ctrl+C |
 
-Fly mode: WASD move, Space/C vertical, Shift sprint.
+## Debug visualization (F3)
 
-**Debug UI:** separate panel (FPS, shadow toggles). Usable while the menu is open. Uncap FPS with `ENGINE_PRESENT=mailbox`.
+Press F3 to toggle Jolt physics debug wireframes:
+- **Green**: all physics bodies (spheres, boxes, capsules, cylinders, tapered variants, trimesh terrain)
+- **Red**: character collision capsule
+- **Yellow**: per-bone hitbox spheres (defined in `<model>.json`)
+
+Wireframe rendering runs through a standalone Vulkan line-list pipeline (`DebugLineRenderer` in `debug_renderer.hpp`). No depth test — lines always render on top.
+
+## Animation split
+
+The animation test model (Icosphere with 11 bones, 2 clips) demonstrates per-bone animation assignment:
+- Joints 0-1 (root+spine) play primary clip
+- Joints 2-10 (chest+head+arms) play secondary clip
+- Press E to swap which clip is primary vs secondary
+- Hitboxes (11 spheres on every bone) confirm per-bone positions
+
+System: `MeshInstance::secondary_joints` pointer → `compute_joint_matrices_split()` in engine. Zero overhead when null.
+
+## Hitbox system
+
+Per-skeleton collision attachments defined in `<model_name>.json`:
+- **Body collider**: physics interactions (ground, rigidbodies, character push)
+- **Hitboxes**: sensor bodies on specific bones for raycast detection (headshots, limb damage)
+- References bones by name or joint index
+- F3 shows hitboxes as yellow wireframes
+- Left-click raycasts against hitbox layer, prints name on hit
+- Falls back to body collider raycast when no hitboxes configured
+
+New Jolt layer (`kHitbox`) — sensor-only, no collision response.
 
 ## Lighting and shadows
 
