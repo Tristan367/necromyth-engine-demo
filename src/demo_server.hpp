@@ -90,8 +90,11 @@ public:
     for (engine::MeshInstance &inst : scene_.instances())
       if (inst.skin_index != engine::k_invalid_skin_index) {
         inst.secondary_joints = &secondary_joints_;
-        inst.next_animation_index = (inst.animation_index + 1) % static_cast<std::uint32_t>(scene_.animations().size());
-        inst.next_animation_time = 0.0F;
+        const std::uint32_t ac = static_cast<std::uint32_t>(scene_.animations().size());
+        if (ac > 0) {
+          inst.next_animation_index = (inst.animation_index + 1) % ac;
+          inst.next_animation_time = 0.0F;
+        }
       }
   }
 
@@ -150,12 +153,15 @@ public:
             instance.next_animation_time > next_clip.duration)
           instance.next_animation_time = std::fmod(instance.next_animation_time, next_clip.duration);
 
-        instance.blend_factor += delta / instance.blend_duration;
-        if (instance.blend_factor >= 1.0F) {
-          instance.animation_index = instance.next_animation_index;
-          instance.animation_time = instance.next_animation_time;
-          instance.next_animation_index = std::numeric_limits<std::uint32_t>::max();
-          instance.blend_factor = 1.0F;
+        // Skip crossfade promotion when using animation split
+        if (!instance.secondary_joints || instance.secondary_joints->empty()) {
+          instance.blend_factor += delta / instance.blend_duration;
+          if (instance.blend_factor >= 1.0F) {
+            instance.animation_index = instance.next_animation_index;
+            instance.animation_time = instance.next_animation_time;
+            instance.next_animation_index = std::numeric_limits<std::uint32_t>::max();
+            instance.blend_factor = 1.0F;
+          }
         }
       }
     }
