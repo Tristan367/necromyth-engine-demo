@@ -107,6 +107,9 @@ void DemoApp::run() {
         static_cast<float>(now_counter - impl.last_frame_counter) / static_cast<float>(SDL_GetPerformanceFrequency());
     impl.last_frame_counter = now_counter;
 
+    // Advance input frame before processing events (edge detection)
+    impl.input.input_map().new_frame();
+
     SDL_Event event{};
     while (SDL_PollEvent(&event)) {
       // Tab: toggle character mode (before InputRouter consumes the key)
@@ -157,8 +160,6 @@ void DemoApp::run() {
       impl.fly_camera.update(impl.scene.camera(), delta_seconds, impl.input.input_map());
 
     // Read input once per frame
-    impl.input.input_map().new_frame();
-
     float input_fwd = 0.0F;
     float input_rgt = 0.0F;
     bool jump = false;
