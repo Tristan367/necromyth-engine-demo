@@ -1,6 +1,7 @@
 #pragma once
 
 #include "scene/camera.hpp"
+#include "platform/input_map.hpp"
 
 #define GLM_FORCE_RADIANS
 #include <glm/gtc/constants.hpp>
@@ -77,9 +78,9 @@ public:
     }
   }
 
-  void update(engine::Camera &camera, float delta_seconds) {
+  void update(engine::Camera &camera, float delta_seconds, const engine::InputMap &im) {
     update_orientation(delta_seconds);
-    update_position(camera, delta_seconds);
+    update_position(camera, delta_seconds, im);
   }
 
   void update_orientation(float delta_seconds) {
@@ -98,23 +99,19 @@ private:
     });
   }
 
-  void update_position(engine::Camera &camera, float delta_seconds) {
-    const bool *keyboard = SDL_GetKeyboardState(nullptr);
-    if (keyboard == nullptr)
-      return;
-
+  void update_position(engine::Camera &camera, float delta_seconds, const engine::InputMap &im) {
     const glm::vec3 forward = orientation_forward();
     const glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0.0F, 1.0F, 0.0F)));
     const glm::vec3 up{0.0F, 1.0F, 0.0F};
 
-    const float speed = (keyboard[SDL_SCANCODE_LSHIFT] || keyboard[SDL_SCANCODE_RSHIFT]) ? fast_speed_ : move_speed_;
+    const float speed = im.pressed("fly_sprint") ? fast_speed_ : move_speed_;
     const glm::vec3 velocity =
-        (keyboard[SDL_SCANCODE_W] ? forward : glm::vec3(0.0F)) +
-        (keyboard[SDL_SCANCODE_S] ? -forward : glm::vec3(0.0F)) +
-        (keyboard[SDL_SCANCODE_D] ? right : glm::vec3(0.0F)) +
-        (keyboard[SDL_SCANCODE_A] ? -right : glm::vec3(0.0F)) +
-        (keyboard[SDL_SCANCODE_SPACE] ? up : glm::vec3(0.0F)) +
-        (keyboard[SDL_SCANCODE_C] ? -up : glm::vec3(0.0F));
+        (im.pressed("fly_forward") ? forward : glm::vec3(0.0F)) +
+        (im.pressed("fly_back")    ? -forward : glm::vec3(0.0F)) +
+        (im.pressed("fly_right")   ? right : glm::vec3(0.0F)) +
+        (im.pressed("fly_left")    ? -right : glm::vec3(0.0F)) +
+        (im.pressed("fly_up")      ? up : glm::vec3(0.0F)) +
+        (im.pressed("fly_down")    ? -up : glm::vec3(0.0F));
 
     if (glm::length(velocity) > 0.0F)
       position_ += glm::normalize(velocity) * speed * delta_seconds;

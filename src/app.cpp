@@ -154,22 +154,24 @@ void DemoApp::run() {
     const bool menu_open = !impl.fly_camera.capture_active();
 
     if (!impl.character_mode && impl.input.should_update_camera(impl.debug_ui, impl.fly_camera))
-      impl.fly_camera.update(impl.scene.camera(), delta_seconds);
+      impl.fly_camera.update(impl.scene.camera(), delta_seconds, impl.input.input_map());
 
     // Read input once per frame
+    impl.input.input_map().new_frame();
+
     float input_fwd = 0.0F;
     float input_rgt = 0.0F;
     bool jump = false;
 
     if (impl.character_mode && !menu_open) {
       impl.fly_camera.update_orientation(delta_seconds);
-      const bool *keys = SDL_GetKeyboardState(nullptr);
+      const auto &im = impl.input.input_map();
 
-      if (keys[SDL_SCANCODE_W]) input_fwd += 1.0F;
-      if (keys[SDL_SCANCODE_S]) input_fwd -= 0.7F;
-      if (keys[SDL_SCANCODE_D]) input_rgt += 0.7F;
-      if (keys[SDL_SCANCODE_A]) input_rgt -= 0.7F;
-      if (keys[SDL_SCANCODE_SPACE]) jump = true;
+      if (im.strength("move_forward") > 0.0F) input_fwd += 1.0F;
+      if (im.strength("move_back") > 0.0F) input_fwd -= 0.7F;
+      if (im.strength("move_right") > 0.0F) input_rgt += 0.7F;
+      if (im.strength("move_left") > 0.0F) input_rgt -= 0.7F;
+      jump = im.just_pressed("jump");
 
       const glm::vec3 look = impl.fly_camera.forward();
       const glm::vec3 fwd = glm::normalize(glm::vec3(look.x, 0.0F, look.z));
