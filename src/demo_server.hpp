@@ -123,9 +123,8 @@ public:
       return;
     const float t = static_cast<float>(SDL_GetTicks()) * 0.001f;
     joint_overrides_[10] = engine::BoneTRS{
-        .translation = glm::vec3{0.0F, 0.1F, 0.0F},
+        .translation = glm::vec3{0.0F, std::sin(t * 3.0F) * 0.3F, 0.0F},
         .rotation = glm::angleAxis(std::sin(t * 10.0F) * 1.5F, glm::vec3{1.0F, 0.0F, 0.0F}),
-        .scale = glm::vec3{1.0F, 2.0F, 1.0F},
     };
   }
 
