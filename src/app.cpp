@@ -142,6 +142,12 @@ void DemoApp::run() {
         continue;
       }
 
+      if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_R &&
+          !impl.debug_ui.wants_keyboard()) {
+        impl.server.toggle_bone_override();
+        continue;
+      }
+
       impl.input.process_event(event, impl.debug_ui, impl.fly_camera);
 
       if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT &&

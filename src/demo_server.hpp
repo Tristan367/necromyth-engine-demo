@@ -10,6 +10,8 @@
 #include <Jolt/Physics/Collision/CastResult.h>
 #include <Jolt/Physics/Collision/RayCast.h>
 
+#include <glm/gtc/quaternion.hpp>
+
 #include <cmath>
 #include <cstdint>
 #include <iostream>
@@ -90,6 +92,7 @@ public:
     for (engine::MeshInstance &inst : scene_.instances())
       if (inst.skin_index != engine::k_invalid_skin_index) {
         inst.secondary_joints = &secondary_joints_;
+        inst.joint_overrides = &joint_overrides_;
         const std::uint32_t ac = static_cast<std::uint32_t>(scene_.animations().size());
         if (ac > 0) {
           inst.next_animation_index = (inst.animation_index + 1) % ac;
@@ -107,6 +110,23 @@ public:
   [[nodiscard]] auto debug_active() const -> bool { return debug_enabled_; }
   [[nodiscard]] auto debug_lines() const -> const std::vector<JoltDebugRenderer::Line> & {
     return debug_renderer_.lines();
+  }
+
+  void toggle_bone_override() {
+    bone_override_active_ = !bone_override_active_;
+    if (!bone_override_active_)
+      joint_overrides_.clear();
+  }
+
+  void update_bone_override() {
+    if (!bone_override_active_)
+      return;
+    const float t = static_cast<float>(SDL_GetTicks()) * 0.001f;
+    joint_overrides_[10] = engine::BoneTRS{
+        .translation = glm::vec3{0.0F, 0.1F, 0.0F},
+        .rotation = glm::angleAxis(std::sin(t * 10.0F) * 1.5F, glm::vec3{1.0F, 0.0F, 0.0F}),
+        .scale = glm::vec3{1.0F, 2.0F, 1.0F},
+    };
   }
 
   [[nodiscard]] auto raycast_hitbox(const glm::vec3 &origin, const glm::vec3 &dir) -> std::string {
@@ -262,6 +282,7 @@ public:
       }
     }
 
+    update_bone_override();
     update_hitboxes();
   }
 
@@ -300,6 +321,7 @@ private:
             scene_.animations()[instance.next_animation_index],
             instance.next_animation_time,
             *instance.secondary_joints,
+            instance.joint_overrides,
             unused_joint_matrices, &bone_worlds_local);
       } else if (instance.next_animation_index < scene_.animations().size()) {
         engine::compute_joint_matrices_blended(
@@ -341,7 +363,9 @@ private:
   RenderState render_state_;
   std::vector<PhysicsEntry> physics_bodies_;
   std::unordered_map<std::uint32_t, std::unique_ptr<engine::physics::HitboxManager>> hitbox_managers_;
-  std::vector<std::uint32_t> secondary_joints_{2, 3, 4, 5, 6, 7, 8, 9, 10}; // upper body bones
+  std::vector<std::uint32_t> secondary_joints_{2, 3, 4, 5, 6, 7, 8, 9, 10};
+  std::unordered_map<std::uint32_t, engine::BoneTRS> joint_overrides_;
+  bool bone_override_active_{false};
   glm::vec3 smoothed_input_{0, 0, 0};
   JoltDebugRenderer debug_renderer_;
   bool debug_enabled_{false};
