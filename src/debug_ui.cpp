@@ -48,6 +48,23 @@ struct DebugUi::Impl {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGui::StyleColorsDark();
+    ImGuiStyle &style = ImGui::GetStyle();
+    style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.5f, 0.1f, 0.1f, 1.0f);
+    style.Colors[ImGuiCol_CheckMark] = ImVec4(0.9f, 0.2f, 0.2f, 1.0f);
+    style.Colors[ImGuiCol_SliderGrab] = ImVec4(0.7f, 0.15f, 0.15f, 1.0f);
+    style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.9f, 0.2f, 0.2f, 1.0f);
+    style.Colors[ImGuiCol_Button] = ImVec4(0.35f, 0.1f, 0.1f, 0.6f);
+    style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.5f, 0.15f, 0.15f, 1.0f);
+    style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.7f, 0.2f, 0.2f, 1.0f);
+    style.Colors[ImGuiCol_Header] = ImVec4(0.35f, 0.1f, 0.1f, 0.6f);
+    style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.5f, 0.15f, 0.15f, 0.8f);
+    style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.5f, 0.15f, 0.15f, 1.0f);
+    style.Colors[ImGuiCol_FrameBg] = ImVec4(0.2f, 0.05f, 0.05f, 0.54f);
+    style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.35f, 0.1f, 0.1f, 0.6f);
+    style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.4f, 0.1f, 0.1f, 0.67f);
+    style.Colors[ImGuiCol_WindowBg] = ImVec4(0.08f, 0.02f, 0.02f, 0.94f);
+    style.Colors[ImGuiCol_PopupBg] = ImVec4(0.08f, 0.02f, 0.02f, 0.94f);
+    style.Colors[ImGuiCol_Border] = ImVec4(0.3f, 0.08f, 0.08f, 0.5f);
 
     ImGuiIO &io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;

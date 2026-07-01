@@ -301,42 +301,22 @@ public:
 private:
   void update_hitboxes() {
     for (const engine::MeshInstance &instance : scene_.instances()) {
-      if (instance.skin_index >= scene_.skeletons().size()) continue;
-      if (instance.animation_index >= scene_.animations().size()) continue;
+      if (instance.skin_index >= scene_.skeletons().size() ||
+          instance.animation_index >= scene_.animations().size())
+        continue;
 
       auto it = hitbox_managers_.find(instance.skin_index);
       if (it == hitbox_managers_.end()) continue;
 
       const engine::SkeletonAsset &skel = scene_.skeletons()[instance.skin_index];
-      const engine::AnimationClip &clip = scene_.animations()[instance.animation_index];
-
       std::vector<glm::mat4> bone_worlds_local;
       std::vector<glm::mat4> unused_joint_matrices;
-      if (instance.secondary_joints && !instance.secondary_joints->empty() &&
-          instance.next_animation_index < scene_.animations().size()) {
-        engine::compute_joint_matrices_split(
-            skel,
-            clip, instance.animation_time,
-            scene_.animations()[instance.next_animation_index],
-            instance.next_animation_time,
-            *instance.secondary_joints,
-            instance.joint_overrides,
-            unused_joint_matrices, &bone_worlds_local);
-      } else if (instance.next_animation_index < scene_.animations().size()) {
-        engine::compute_joint_matrices_blended(
-            skel, clip, instance.animation_time,
-            scene_.animations()[instance.next_animation_index],
-            instance.next_animation_time, instance.blend_factor,
-            unused_joint_matrices, &bone_worlds_local);
-      } else {
-        engine::compute_joint_matrices(skel, clip, instance.animation_time,
-                                        unused_joint_matrices, &bone_worlds_local);
-      }
+      engine::compute_joint_matrices_for_instance(
+          skel, instance, scene_.animations(),
+          unused_joint_matrices, &bone_worlds_local);
 
-      // Convert model-local bone transforms to world space
-      const glm::mat4 &model = instance.model;
       for (glm::mat4 &bw : bone_worlds_local)
-        bw = model * bw;
+        bw = instance.model * bw;
 
       it->second->update(skel, bone_worlds_local);
     }

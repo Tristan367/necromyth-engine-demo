@@ -228,11 +228,8 @@ void DemoApp::run() {
     }
 
     // Audio listener follows camera
-    {
-      const glm::vec3 pos = impl.scene.camera().position();
-      const glm::vec3 fwd = impl.scene.camera().look_direction();
-      impl.audio.set_listener(pos, fwd, glm::vec3{0.0F, 1.0F, 0.0F});
-    }
+    impl.audio.set_listener(impl.scene.camera().position(), impl.scene.camera().look_direction(),
+                            glm::vec3{0.0F, 1.0F, 0.0F});
 
     const UiFrameResult ui = impl.debug_ui.begin_frame(impl.scene, delta_seconds, menu_open);
 
