@@ -1,7 +1,9 @@
 #include "app.hpp"
 
+#include "audio/audio_engine.hpp"
 #include "debug_ui.hpp"
 #include "debug_renderer.hpp"
+#include "demo_assets.hpp"
 #include "demo_scene.hpp"
 #include "demo_server.hpp"
 #include "fly_camera.hpp"
@@ -47,6 +49,7 @@ struct DemoApp::Impl {
   std::unique_ptr<DebugLineRenderer> debug_lines_;
   FlyCameraController fly_camera;
   InputRouter input;
+  engine::audio::AudioEngine audio;
   std::uint64_t last_frame_counter{};
   bool running{true};
   bool character_mode{false};
@@ -83,10 +86,21 @@ struct DemoApp::Impl {
       std::cout << " (requested index " << *config.gpu_device_index << ')';
     std::cout << "\nEsc: menu / resume fly mode. WASD move, Space/C vertical, Shift sprint.\n";
     std::cout << "Menu: Resume or Quit. Debug panel: shadow toggles, FPS.\n";
+    std::cout << "Audio: positional music at animationTest model\n";
+
+    // Audio
+    audio.init();
+    const auto music_h = audio.load_sound(asset_path("/audio/audioTest.mp3"), /*loop=*/true);
+    if (music_h != engine::audio::k_invalid_sound) {
+      audio.set_volume(music_h, 0.5F);
+      audio.set_position(music_h, glm::vec3{0.0F, 1.5F, 0.0F});
+      audio.play(music_h);
+    }
   }
 
   ~Impl() {
     fly_camera.release_capture();
+    audio.shutdown();
   }
 };
 
@@ -205,6 +219,13 @@ void DemoApp::run() {
       impl.scene.camera().look_at(
           glm::vec3(char_pos.x, char_pos.y + 1.5F, char_pos.z),
           glm::vec3(char_pos.x, char_pos.y + 1.5F, char_pos.z) + look_fwd);
+    }
+
+    // Audio listener follows camera
+    {
+      const glm::vec3 pos = impl.scene.camera().position();
+      const glm::vec3 fwd = impl.scene.camera().look_direction();
+      impl.audio.set_listener(pos, fwd, glm::vec3{0.0F, 1.0F, 0.0F});
     }
 
     const UiFrameResult ui = impl.debug_ui.begin_frame(impl.scene, delta_seconds, menu_open);
