@@ -114,10 +114,14 @@ public:
   }
 
   void toggle_animation() {
-    if (anim_state_.current() == "idle")
-      anim_state_.travel("walk");
-    else
-      anim_state_.travel("idle");
+    const bool split = false; // split disabled while using state machine
+    for (engine::MeshInstance &instance : scene_.instances()) {
+      if (instance.skin_index == engine::k_invalid_skin_index) continue;
+      if (anim_state_.current() == "idle")
+        anim_state_.travel(instance, "walk", split);
+      else
+        anim_state_.travel(instance, "idle", split);
+    }
   }
 
   void toggle_bone_override() {
