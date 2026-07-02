@@ -4,6 +4,7 @@
 #include "debug_renderer.hpp"
 #include "physics/hitbox_manager.hpp"
 #include "physics/physics_world.hpp"
+#include "scene/animation_state_machine.hpp"
 #include "scene/animation_utils.hpp"
 #include "scene/scene.hpp"
 
@@ -99,6 +100,13 @@ public:
           inst.next_animation_time = 0.0F;
         }
       }
+
+    // State machine: Wriggle/idle ↔ Writhe/walk
+    anim_state_.add_state({"idle", scene_.animations().size() - 2, true});
+    anim_state_.add_state({"walk", scene_.animations().size() - 1, true});
+    anim_state_.add_transition({"idle", "walk", "speed", engine::AnimConditionOp::Greater, 0.01F, 0.2F});
+    anim_state_.add_transition({"walk", "idle", "speed", engine::AnimConditionOp::Less, 0.01F, 0.3F});
+    anim_state_.start("idle");
   }
 
   [[nodiscard]] auto character_position(float interp_alpha = 0.0F) const -> glm::vec3 {
@@ -154,17 +162,20 @@ public:
   }
 
   void tick(float delta, float input_forward, float input_right, bool input_jump) {
+    // Update state machine parameters
+    const float move_speed =
+        std::sqrt(input_forward * input_forward + input_right * input_right);
+    anim_state_.set_param("speed", move_speed);
+
+    // Advance state machines on all skinned instances
     for (engine::MeshInstance &instance : scene_.instances()) {
-      if (instance.skin_index == engine::k_invalid_skin_index)
-        continue;
-      if (instance.animation_index >= scene_.animations().size())
+      if (instance.skin_index == engine::k_invalid_skin_index ||
+          instance.animation_index >= scene_.animations().size())
         continue;
 
-      const engine::AnimationClip &clip = scene_.animations()[instance.animation_index];
-      instance.animation_time += delta * instance.animation_speed;
-      if (instance.animation_loop && clip.duration > 0.0F && instance.animation_time > clip.duration)
-        instance.animation_time = std::fmod(instance.animation_time, clip.duration);
+      anim_state_.tick(delta, instance, scene_.animations());
 
+      // Secondary animation time (for split system)
       if (instance.next_animation_index < scene_.animations().size()) {
         const engine::AnimationClip &next_clip = scene_.animations()[instance.next_animation_index];
         instance.next_animation_time += delta * instance.animation_speed;
@@ -345,6 +356,7 @@ private:
   std::vector<std::uint32_t> secondary_joints_{2, 3, 4, 5, 6, 7, 8, 9, 10};
   std::unordered_map<std::uint32_t, engine::BoneTRS> joint_overrides_;
   bool bone_override_active_{false};
+  engine::AnimStateMachine anim_state_;
   glm::vec3 smoothed_input_{0, 0, 0};
   JoltDebugRenderer debug_renderer_;
   bool debug_enabled_{false};
