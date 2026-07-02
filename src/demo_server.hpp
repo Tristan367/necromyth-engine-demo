@@ -162,20 +162,18 @@ public:
   }
 
   void tick(float delta, float input_forward, float input_right, bool input_jump) {
-    // Update state machine parameters
-    const float move_speed =
+    const float speed =
         std::sqrt(input_forward * input_forward + input_right * input_right);
-    anim_state_.set_param("speed", move_speed);
+    anim_state_.set_param("speed", speed);
 
-    // Advance state machines on all skinned instances
     for (engine::MeshInstance &instance : scene_.instances()) {
-      if (instance.skin_index == engine::k_invalid_skin_index ||
-          instance.animation_index >= scene_.animations().size())
+      if (instance.skin_index == engine::k_invalid_skin_index)
+        continue;
+      if (instance.animation_index >= scene_.animations().size())
         continue;
 
       anim_state_.tick(delta, instance, scene_.animations());
 
-      // Secondary animation time (for split system)
       if (instance.next_animation_index < scene_.animations().size()) {
         const engine::AnimationClip &next_clip = scene_.animations()[instance.next_animation_index];
         instance.next_animation_time += delta * instance.animation_speed;
@@ -183,7 +181,6 @@ public:
             instance.next_animation_time > next_clip.duration)
           instance.next_animation_time = std::fmod(instance.next_animation_time, next_clip.duration);
 
-        // Skip crossfade promotion when using animation split
         if (!instance.secondary_joints || instance.secondary_joints->empty()) {
           instance.blend_factor += delta / instance.blend_duration;
           if (instance.blend_factor >= 1.0F) {
