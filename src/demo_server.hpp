@@ -91,8 +91,15 @@ public:
               << "Hitbox managers: " << hitbox_managers_.size() << "\n";
 
     for (engine::MeshInstance &inst : scene_.instances())
-      if (inst.skin_index != engine::k_invalid_skin_index)
+      if (inst.skin_index != engine::k_invalid_skin_index) {
         inst.joint_overrides = &joint_overrides_;
+        inst.secondary_joints = &secondary_joints_;
+        const std::uint32_t ac = static_cast<std::uint32_t>(scene_.animations().size());
+        if (ac > 1) {
+          inst.secondary_animation_index = (inst.animation_index + 1) % ac;
+          inst.secondary_animation_time = 0.0F;
+        }
+      }
 
     // State machine: Wriggle/idle ↔ Writhe/walk
     anim_state_.add_state({"idle", scene_.animations().size() - 2, true});
@@ -179,6 +186,10 @@ public:
         continue;
 
       anim_state_.tick(delta, instance, scene_.animations());
+
+      if (instance.secondary_joints && !instance.secondary_joints->empty()) {
+        instance.secondary_animation_time += delta * instance.animation_speed;
+      }
 
       if (!anim_state_.is_transitioning() &&
           instance.next_animation_index < scene_.animations().size()) {
@@ -357,7 +368,7 @@ private:
   RenderState render_state_;
   std::vector<PhysicsEntry> physics_bodies_;
   std::unordered_map<std::uint32_t, std::unique_ptr<engine::physics::HitboxManager>> hitbox_managers_;
-  std::vector<std::uint32_t> secondary_joints_{2, 3, 4, 5, 6, 7, 8, 9, 10};
+  std::vector<std::uint32_t> secondary_joints_{4, 5, 6, 7, 8, 9, 10}; // upper body
   std::unordered_map<std::uint32_t, engine::BoneTRS> joint_overrides_;
   bool bone_override_active_{false};
   engine::AnimStateMachine anim_state_;
