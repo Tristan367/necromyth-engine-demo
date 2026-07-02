@@ -91,15 +91,8 @@ public:
               << "Hitbox managers: " << hitbox_managers_.size() << "\n";
 
     for (engine::MeshInstance &inst : scene_.instances())
-      if (inst.skin_index != engine::k_invalid_skin_index) {
-        inst.secondary_joints = &secondary_joints_;
+      if (inst.skin_index != engine::k_invalid_skin_index)
         inst.joint_overrides = &joint_overrides_;
-        const std::uint32_t ac = static_cast<std::uint32_t>(scene_.animations().size());
-        if (ac > 0) {
-          inst.next_animation_index = (inst.animation_index + 1) % ac;
-          inst.next_animation_time = 0.0F;
-        }
-      }
 
     // State machine: Wriggle/idle ↔ Writhe/walk
     anim_state_.add_state({"idle", scene_.animations().size() - 2, true});
@@ -118,6 +111,13 @@ public:
   [[nodiscard]] auto debug_active() const -> bool { return debug_enabled_; }
   [[nodiscard]] auto debug_lines() const -> const std::vector<JoltDebugRenderer::Line> & {
     return debug_renderer_.lines();
+  }
+
+  void toggle_animation() {
+    if (anim_state_.current() == "idle")
+      anim_state_.travel("walk");
+    else
+      anim_state_.travel("idle");
   }
 
   void toggle_bone_override() {

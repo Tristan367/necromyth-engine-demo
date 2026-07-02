@@ -160,8 +160,10 @@ void DemoApp::run() {
       }
 
       if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_E &&
-          !impl.debug_ui.wants_keyboard())
-        toggle_demo_animation(impl.scene);
+          !impl.debug_ui.wants_keyboard()) {
+        impl.server.toggle_animation();
+        continue;
+      }
 
       if (event.type == SDL_EVENT_WINDOW_RESIZED ||
           event.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED)
