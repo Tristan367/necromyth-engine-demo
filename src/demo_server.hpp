@@ -178,7 +178,8 @@ public:
 
       anim_state_.tick(delta, instance, scene_.animations());
 
-      if (instance.next_animation_index < scene_.animations().size()) {
+      if (!anim_state_.is_transitioning() &&
+          instance.next_animation_index < scene_.animations().size()) {
         const engine::AnimationClip &next_clip = scene_.animations()[instance.next_animation_index];
         instance.next_animation_time += delta * instance.animation_speed;
         if (instance.animation_loop && next_clip.duration > 0.0F &&
