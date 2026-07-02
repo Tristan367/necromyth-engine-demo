@@ -117,13 +117,10 @@ public:
     const bool split = false;
     for (engine::MeshInstance &instance : scene_.instances()) {
       if (instance.skin_index == engine::k_invalid_skin_index) continue;
-      if (anim_state_.current() == "idle") {
+      if (anim_state_.current() == "idle")
         anim_state_.travel(instance, "walk", split);
-        anim_state_.set_param("speed", 1.0F);  // prevent immediate bounce-back to idle
-      } else {
+      else
         anim_state_.travel(instance, "idle", split);
-        anim_state_.set_param("speed", 0.0F);
-      }
     }
   }
 
@@ -172,6 +169,8 @@ public:
     const float speed =
         std::sqrt(input_forward * input_forward + input_right * input_right);
     anim_state_.set_param("speed", speed);
+    if (speed > 0.01F)
+      anim_state_.clear_hold();
 
     for (engine::MeshInstance &instance : scene_.instances()) {
       if (instance.skin_index == engine::k_invalid_skin_index)
