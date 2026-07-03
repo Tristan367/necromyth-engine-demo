@@ -257,17 +257,13 @@ void add_animation_test_model(
 
   const std::uint32_t skeleton_index = scene.add_skeleton(std::move(skeleton));
 
-  const std::uint32_t first_animation_index =
-      static_cast<std::uint32_t>(scene.animations().size());
   for (const engine::AnimationClip &anim : anim_model.animations)
     (void)scene.add_animation(anim);
 
   const std::uint32_t first_instance =
       static_cast<std::uint32_t>(scene.instances().size() - anim_model.primitives.size());
-  for (std::size_t i = 0; i < anim_model.primitives.size(); ++i) {
+  for (std::size_t i = 0; i < anim_model.primitives.size(); ++i)
     scene.instance(first_instance + static_cast<std::uint32_t>(i)).skin_index = skeleton_index;
-    scene.instance(first_instance + static_cast<std::uint32_t>(i)).animation_index = first_animation_index;
-  }
 
   std::cout << "Loaded animation model with " << anim_model.animations.size()
             << " animations (" << anim_model.skeletons.front().joint_nodes.size() << " bones):";
@@ -291,17 +287,13 @@ void add_animation_test_model2(
 
   const std::uint32_t skeleton_index = scene.add_skeleton(std::move(skeleton));
 
-  const std::uint32_t first_animation_index =
-      static_cast<std::uint32_t>(scene.animations().size());
   for (const engine::AnimationClip &anim : model.animations)
     (void)scene.add_animation(anim);
 
   const std::uint32_t first_instance =
       static_cast<std::uint32_t>(scene.instances().size() - model.primitives.size());
-  for (std::size_t i = 0; i < model.primitives.size(); ++i) {
+  for (std::size_t i = 0; i < model.primitives.size(); ++i)
     scene.instance(first_instance + static_cast<std::uint32_t>(i)).skin_index = skeleton_index;
-    scene.instance(first_instance + static_cast<std::uint32_t>(i)).animation_index = first_animation_index;
-  }
 
   std::cout << "Loaded animation model 2 with " << model.animations.size()
             << " animations (" << model.skeletons.front().joint_nodes.size() << " bones):";

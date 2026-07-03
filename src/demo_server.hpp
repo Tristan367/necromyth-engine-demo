@@ -196,13 +196,6 @@ public:
     anim_state_.tick(delta, scene_.animations());
     anim_state_2_.tick(delta, scene_.animations());
 
-    // Advance animation_time on model2 instances (time is in PoseLayer, not MeshInstance)
-    for (engine::MeshInstance &instance : scene_.instances()) {
-      if (instance.skin_index == engine::k_invalid_skin_index || instance.skin_index == 0)
-        continue;
-      instance.animation_time += delta * instance.animation_speed;
-    }
-
     // Jolt sample velocity formula (CharacterVirtualTest::HandleInput)
     character_->update_ground_velocity();
 
@@ -251,7 +244,6 @@ public:
 
     render_state_.prev = render_state_.curr;
     render_state_.curr = char_pos;
-    render_state_.write_time_ms = SDL_GetTicks();
 
     for (auto &pb : physics_bodies_) {
       physics_.sync_body_to_instance(pb.body_id, scene_.instance(pb.instance_index));
@@ -349,7 +341,6 @@ private:
   struct RenderState {
     glm::vec3 prev{0.0F, 20.0F, 0.0F};
     glm::vec3 curr{0.0F, 20.0F, 0.0F};
-    std::uint64_t write_time_ms{};
   };
 
   engine::Scene &scene_;
