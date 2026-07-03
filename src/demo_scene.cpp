@@ -275,25 +275,6 @@ void update_demo_scene(engine::Scene &scene) {
   update_demo_animations(scene);
 }
 
-void toggle_demo_animation(engine::Scene &scene) {
-  for (engine::MeshInstance &instance : scene.instances()) {
-    if (instance.skin_index == engine::k_invalid_skin_index)
-      continue;
-    const std::uint32_t anim_count = static_cast<std::uint32_t>(scene.animations().size());
-    if (instance.next_animation_index >= anim_count) {
-      // First press: activate split, secondary bones play other clip
-      instance.next_animation_index = (instance.animation_index + 1) % anim_count;
-      instance.next_animation_time = 0.0F;
-    } else {
-      // Subsequent presses: swap primary ↔ secondary
-      std::swap(instance.animation_index, instance.next_animation_index);
-      std::swap(instance.animation_time, instance.next_animation_time);
-    }
-    std::cout << "Primary: " << scene.animations()[instance.animation_index].name
-              << "  Secondary: " << scene.animations()[instance.next_animation_index].name << '\n';
-  }
-}
-
 void add_physics_test_objects(engine::Scene &scene) {
   struct ObjectDef {
     engine::MeshSource (*maker)();

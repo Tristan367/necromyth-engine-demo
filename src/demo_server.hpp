@@ -100,16 +100,22 @@ public:
     // Layer 1 = masked upper-body override (E key), starts inactive (weight 0).
     upper_body_layer_ = anim_state_.add_override_layer(&secondary_joints_, 0.0F);
 
+    // Model2: two active layers with per-arm masks. Both arms always wiggle.
+    anim_state_2_.add_state({"bigarm", 2, true});
+    anim_state_2_.add_state({"littlearm", 3, true});
+    anim_state_2_.start("bigarm");
+    anim_state_2_.add_override_layer(&bigarm_mask_, 1.0F);
+    anim_state_2_.set_override_clip(1, 2, 0.0F);     // layer 0: bigarmwiggle on big arm
+    anim_state_2_.add_override_layer(&littlearm_mask_, 1.0F);
+    anim_state_2_.set_override_clip(2, 3, 0.0F);     // layer 1: littlearmwiggle on little arm
+
     for (engine::MeshInstance &inst : scene_.instances())
       if (inst.skin_index != engine::k_invalid_skin_index) {
         inst.joint_overrides = &joint_overrides_;
-        if (inst.skin_index == 0) {
-          // Model1: driven by the layered pose stack.
+        if (inst.skin_index == 0)
           inst.pose_layers = &anim_state_.layers();
-        } else {
-          // Model2: legacy per-bone split (its own fields), unchanged.
-          inst.secondary_joints = &secondary_joints_2_;
-        }
+        else
+          inst.pose_layers = &anim_state_2_.layers();
       }
   }
 
@@ -187,26 +193,14 @@ public:
     if (speed > 0.01F)
       anim_state_.clear_hold();
 
-    // Model1 (skeleton 0) is driven once by the layered state machine.
     anim_state_.tick(delta, scene_.animations());
+    anim_state_2_.tick(delta, scene_.animations());
 
+    // Advance animation_time on model2 instances (time is in PoseLayer, not MeshInstance)
     for (engine::MeshInstance &instance : scene_.instances()) {
-      if (instance.skin_index == engine::k_invalid_skin_index)
+      if (instance.skin_index == engine::k_invalid_skin_index || instance.skin_index == 0)
         continue;
-      if (instance.skin_index == 0)
-        continue;  // model1: handled by anim_state_ layer stack
-      if (instance.animation_index >= scene_.animations().size())
-        continue;
-
       instance.animation_time += delta * instance.animation_speed;
-
-      // Model2: legacy per-bone split (secondary plays the opposite clip).
-      if (instance.secondary_joints && !instance.secondary_joints->empty()) {
-        instance.secondary_animation_time += delta * instance.animation_speed;
-        const std::uint32_t other = instance.animation_index ^ 1;
-        if (other < scene_.animations().size())
-          instance.secondary_animation_index = other;
-      }
     }
 
     // Jolt sample velocity formula (CharacterVirtualTest::HandleInput)
@@ -325,9 +319,8 @@ public:
 private:
   void update_hitboxes() {
     for (const engine::MeshInstance &instance : scene_.instances()) {
-      if (instance.skin_index >= scene_.skeletons().size() ||
-          instance.animation_index >= scene_.animations().size())
-        continue;
+      if (instance.skin_index >= scene_.skeletons().size()) continue;
+      if (!instance.pose_layers || instance.pose_layers->empty()) continue;
 
       auto it = hitbox_managers_.find(instance.skin_index);
       if (it == hitbox_managers_.end()) continue;
@@ -366,11 +359,13 @@ private:
   RenderState render_state_;
   std::vector<PhysicsEntry> physics_bodies_;
   std::unordered_map<std::uint32_t, std::unique_ptr<engine::physics::HitboxManager>> hitbox_managers_;
-  std::vector<std::uint32_t> secondary_joints_{4, 5, 6, 7, 8, 9, 10}; // animTest1 upper body
-  std::vector<std::uint32_t> secondary_joints_2_{3, 4, 5};             // animTest2 little arm
+  std::vector<std::uint32_t> secondary_joints_{4, 5, 6, 7, 8, 9, 10}; // model1 override mask
+  std::vector<std::uint32_t> bigarm_mask_{6, 7, 8, 9};                 // model2 layer 0 mask
+  std::vector<std::uint32_t> littlearm_mask_{3, 4, 5};                // model2 layer 1 mask
   std::unordered_map<std::uint32_t, engine::BoneTRS> joint_overrides_;
   bool bone_override_active_{false};
   engine::AnimStateMachine anim_state_;
+  engine::AnimStateMachine anim_state_2_;
   std::size_t upper_body_layer_{0};
   bool upper_body_active_{false};
   glm::vec3 smoothed_input_{0, 0, 0};

@@ -25,6 +25,5 @@ void populate_demo_scene(engine::Scene &scene);
     std::uint32_t *out_char_instance = nullptr,
     engine::MeshSource *out_trimesh_mesh = nullptr) -> engine::Scene;
 void update_demo_scene(engine::Scene &scene);
-void toggle_demo_animation(engine::Scene &scene);
 
 } // namespace app
