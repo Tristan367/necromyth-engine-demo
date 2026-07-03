@@ -126,7 +126,7 @@ public:
     // Spotlight follows camera (flashlight effect)
     scene_.spot_lights().push_back({.position = glm::vec3{0.0F, 2.0F, 0.0F}, .direction = glm::vec3{0.0F, 0.0F, -1.0F},
                                      .color = {1.0F, 0.95F, 0.7F}, .intensity = 2.0F, .range = 12.0F,
-                                     .inner_angle = 0.25F, .outer_angle = 0.55F});
+                                     .inner_angle = 0.25F, .outer_angle = 0.55F, .casts_shadow = true});
   }
 
   [[nodiscard]] auto character_position(float interp_alpha = 0.0F) const -> glm::vec3 {
