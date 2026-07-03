@@ -117,6 +117,16 @@ public:
         else
           inst.pose_layers = &anim_state_2_.layers();
       }
+
+    // Test lights
+    scene_.point_lights().push_back({.position = { 3.0F, 2.0F, 5.0F}, .color = {1.0F, 0.2F, 0.1F}, .intensity = 2.0F, .range = 6.0F});
+    scene_.point_lights().push_back({.position = {-3.0F, 2.0F, 5.0F}, .color = {0.1F, 0.4F, 1.0F}, .intensity = 2.0F, .range = 6.0F});
+    scene_.point_lights().push_back({.position = { 0.0F, 3.0F, 8.0F}, .color = {0.1F, 1.0F, 0.2F}, .intensity = 1.5F, .range = 5.0F});
+
+    // Spotlight from character position (will be updated each frame)
+    scene_.spot_lights().push_back({.position = glm::vec3{0.0F, 20.0F, 0.0F}, .direction = glm::vec3{0.0F, -1.0F, 0.0F},
+                                     .color = {1.0F, 0.9F, 0.5F}, .intensity = 3.0F, .range = 15.0F,
+                                     .inner_angle = 0.3F, .outer_angle = 0.6F});
   }
 
   [[nodiscard]] auto character_position(float interp_alpha = 0.0F) const -> glm::vec3 {
@@ -195,6 +205,13 @@ public:
 
     anim_state_.tick(delta, scene_.animations());
     anim_state_2_.tick(delta, scene_.animations());
+
+    // Spotlight follows character
+    if (!scene_.spot_lights().empty()) {
+      const glm::vec3 cp = character_->position();
+      scene_.spot_lights()[0].position = glm::vec3{cp.x, cp.y + 2.0F, cp.z};
+      scene_.spot_lights()[0].direction = glm::vec3{0.0F, -1.0F, 0.0F};
+    }
 
     // Jolt sample velocity formula (CharacterVirtualTest::HandleInput)
     character_->update_ground_velocity();
