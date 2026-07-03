@@ -90,18 +90,27 @@ public:
               << "\nCharacter at y=20\n"
               << "Hitbox managers: " << hitbox_managers_.size() << "\n";
 
+    // State machine for model1: Wriggle/idle (clip 0) ↔ Writhe/walk (clip 1).
+    // Base layer 0 = full-body locomotion (crossfades idle↔walk automatically).
+    anim_state_.add_state({"idle", 0, true});
+    anim_state_.add_state({"walk", 1, true});
+    anim_state_.add_transition({"idle", "walk", "speed", engine::AnimConditionOp::Greater, 0.01F, 0.25F});
+    anim_state_.add_transition({"walk", "idle", "speed", engine::AnimConditionOp::Less, 0.01F, 0.25F});
+    anim_state_.start("idle");
+    // Layer 1 = masked upper-body override (E key), starts inactive (weight 0).
+    upper_body_layer_ = anim_state_.add_override_layer(&secondary_joints_, 0.0F);
+
     for (engine::MeshInstance &inst : scene_.instances())
       if (inst.skin_index != engine::k_invalid_skin_index) {
         inst.joint_overrides = &joint_overrides_;
-        inst.secondary_joints = (inst.skin_index == 0) ? &secondary_joints_ : &secondary_joints_2_;
+        if (inst.skin_index == 0) {
+          // Model1: driven by the layered pose stack.
+          inst.pose_layers = &anim_state_.layers();
+        } else {
+          // Model2: legacy per-bone split (its own fields), unchanged.
+          inst.secondary_joints = &secondary_joints_2_;
+        }
       }
-
-    // State machine for model1: Wriggle/idle (clip 0) ↔ Writhe/walk (clip 1)
-    anim_state_.add_state({"idle", 0, true});
-    anim_state_.add_state({"walk", 1, true});
-    anim_state_.add_transition({"idle", "walk", "speed", engine::AnimConditionOp::Greater, 0.01F, 1.0F});
-    anim_state_.add_transition({"walk", "idle", "speed", engine::AnimConditionOp::Less, 0.01F, 1.0F});
-    anim_state_.start("idle");
   }
 
   [[nodiscard]] auto character_position(float interp_alpha = 0.0F) const -> glm::vec3 {
@@ -115,14 +124,18 @@ public:
     return debug_renderer_.lines();
   }
 
+  // E key: toggle a masked upper-body override layer on model1. Demonstrates a
+  // real layered override ("hold weapon") that crossfades on/off and coexists
+  // with the base locomotion state machine — no snapping, no mode switching.
   void toggle_animation() {
-    const bool split = false;
-    for (engine::MeshInstance &instance : scene_.instances()) {
-      if (instance.skin_index == engine::k_invalid_skin_index) continue;
-      if (anim_state_.current() == "idle")
-        anim_state_.travel(instance, "walk", split);
-      else
-        anim_state_.travel(instance, "idle", split);
+    upper_body_active_ = !upper_body_active_;
+    if (upper_body_active_) {
+      // Play the "walk/Writhe" clip (1) on the upper body only, fading the layer in.
+      anim_state_.set_override_clip(upper_body_layer_, 1, 0.25F);
+      anim_state_.set_override_weight(upper_body_layer_, 1.0F);
+    } else {
+      // Fade the override out (base locomotion takes the upper body back).
+      anim_state_.set_override_weight(upper_body_layer_, 0.0F);
     }
   }
 
@@ -174,43 +187,25 @@ public:
     if (speed > 0.01F)
       anim_state_.clear_hold();
 
+    // Model1 (skeleton 0) is driven once by the layered state machine.
+    anim_state_.tick(delta, scene_.animations());
+
     for (engine::MeshInstance &instance : scene_.instances()) {
       if (instance.skin_index == engine::k_invalid_skin_index)
         continue;
+      if (instance.skin_index == 0)
+        continue;  // model1: handled by anim_state_ layer stack
       if (instance.animation_index >= scene_.animations().size())
         continue;
 
-      // State machine only drives model1 (skeleton 0)
-      if (instance.skin_index == 0)
-        anim_state_.tick(delta, instance, scene_.animations());
-      else
-        instance.animation_time += delta * instance.animation_speed;
+      instance.animation_time += delta * instance.animation_speed;
 
+      // Model2: legacy per-bone split (secondary plays the opposite clip).
       if (instance.secondary_joints && !instance.secondary_joints->empty()) {
         instance.secondary_animation_time += delta * instance.animation_speed;
-        // Keep secondary opposite of primary (assumes clips paired consecutively)
         const std::uint32_t other = instance.animation_index ^ 1;
         if (other < scene_.animations().size())
           instance.secondary_animation_index = other;
-      }
-
-      if (!anim_state_.is_transitioning() &&
-          instance.next_animation_index < scene_.animations().size()) {
-        const engine::AnimationClip &next_clip = scene_.animations()[instance.next_animation_index];
-        instance.next_animation_time += delta * instance.animation_speed;
-        if (instance.animation_loop && next_clip.duration > 0.0F &&
-            instance.next_animation_time > next_clip.duration)
-          instance.next_animation_time = std::fmod(instance.next_animation_time, next_clip.duration);
-
-        if (!instance.secondary_joints || instance.secondary_joints->empty()) {
-          instance.blend_factor += delta / instance.blend_duration;
-          if (instance.blend_factor >= 1.0F) {
-            instance.animation_index = instance.next_animation_index;
-            instance.animation_time = instance.next_animation_time;
-            instance.next_animation_index = std::numeric_limits<std::uint32_t>::max();
-            instance.blend_factor = 1.0F;
-          }
-        }
       }
     }
 
@@ -376,6 +371,8 @@ private:
   std::unordered_map<std::uint32_t, engine::BoneTRS> joint_overrides_;
   bool bone_override_active_{false};
   engine::AnimStateMachine anim_state_;
+  std::size_t upper_body_layer_{0};
+  bool upper_body_active_{false};
   glm::vec3 smoothed_input_{0, 0, 0};
   JoltDebugRenderer debug_renderer_;
   bool debug_enabled_{false};

@@ -89,7 +89,7 @@ struct DemoApp::Impl {
     std::cout << "Audio: positional music at animationTest model\n";
 
     // Audio
-    audio.init();
+    (void)audio.init();
     const auto music_h = audio.load_sound(asset_path("/audio/audioTest.mp3"), /*loop=*/true);
     if (music_h != engine::audio::k_invalid_sound) {
       audio.set_volume(music_h, 0.5F);

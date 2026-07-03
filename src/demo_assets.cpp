@@ -7,7 +7,14 @@
 #include "scene/scene.hpp"
 #include "scene/sky_mesh.hpp"
 
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcpp"
+#endif
 #include <tinygltf/json.hpp>
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 #define GLM_FORCE_RADIANS
 #include <glm/gtc/matrix_transform.hpp>
