@@ -245,7 +245,8 @@ void DemoApp::run() {
       const glm::vec3 cam_fwd = impl.scene.camera().look_direction();
       const glm::vec3 right = glm::normalize(glm::cross(cam_fwd, glm::vec3{0.0F, 1.0F, 0.0F}));
       impl.scene.spot_lights()[0].position = cam_pos + cam_fwd * 0.5F + right * 0.4F;
-      impl.scene.spot_lights()[0].direction = cam_fwd;
+      // Angle slightly inward toward center and down (like holding a flashlight)
+      impl.scene.spot_lights()[0].direction = glm::normalize(cam_fwd - right * 0.3F - glm::vec3{0.0F, 0.15F, 0.0F});
     }
 
     const UiFrameResult ui = impl.debug_ui.begin_frame(impl.scene, delta_seconds, menu_open);
