@@ -214,6 +214,7 @@ void populate_demo_scene(engine::Scene &scene) {
   });
 
   add_animation_test_model(scene, texture_cache);
+  add_animation_test_model2(scene, texture_cache);
 
   add_physics_test_objects(scene);
 

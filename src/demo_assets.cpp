@@ -269,6 +269,40 @@ void add_animation_test_model(
   std::cout << '\n';
 }
 
+void add_animation_test_model2(
+    engine::Scene &scene,
+    std::unordered_map<std::string, std::uint32_t> &texture_cache) {
+  const engine::LoadedGltfModel model =
+      engine::load_gltf_model(asset_path("/models/animationTest2.glb"));
+  if (model.primitives.empty() || model.skeletons.empty() || model.animations.empty())
+    return;
+
+  add_gltf_model_instances(scene, texture_cache, model, lifted(glm::vec3(8.0F, 1.5F, 0.0F)));
+
+  engine::SkeletonAsset skeleton = model.skeletons.front();
+  load_model_metadata(asset_path("/models/animationTest2.glb"), skeleton);
+
+  const std::uint32_t skeleton_index = scene.add_skeleton(std::move(skeleton));
+
+  const std::uint32_t first_animation_index =
+      static_cast<std::uint32_t>(scene.animations().size());
+  for (const engine::AnimationClip &anim : model.animations)
+    (void)scene.add_animation(anim);
+
+  const std::uint32_t first_instance =
+      static_cast<std::uint32_t>(scene.instances().size() - model.primitives.size());
+  for (std::size_t i = 0; i < model.primitives.size(); ++i) {
+    scene.instance(first_instance + static_cast<std::uint32_t>(i)).skin_index = skeleton_index;
+    scene.instance(first_instance + static_cast<std::uint32_t>(i)).animation_index = first_animation_index;
+  }
+
+  std::cout << "Loaded animation model 2 with " << model.animations.size()
+            << " animations (" << model.skeletons.front().joint_nodes.size() << " bones):";
+  for (const engine::AnimationClip &anim : model.animations)
+    std::cout << ' ' << anim.name;
+  std::cout << '\n';
+}
+
 TrimeshData load_trimesh_data() {
   const engine::LoadedGltfModel model = engine::load_gltf_model(asset_path("/models/trimeshTest.glb"));
   if (model.primitives.empty())

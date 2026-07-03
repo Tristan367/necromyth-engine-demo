@@ -56,6 +56,10 @@ void add_animation_test_model(
     engine::Scene &scene,
     std::unordered_map<std::string, std::uint32_t> &texture_cache);
 
+void add_animation_test_model2(
+    engine::Scene &scene,
+    std::unordered_map<std::string, std::uint32_t> &texture_cache);
+
 struct TrimeshData {
   engine::MeshSource mesh;
   std::string texture_path;

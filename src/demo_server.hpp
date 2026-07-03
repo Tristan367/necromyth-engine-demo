@@ -93,12 +93,12 @@ public:
     for (engine::MeshInstance &inst : scene_.instances())
       if (inst.skin_index != engine::k_invalid_skin_index) {
         inst.joint_overrides = &joint_overrides_;
-        inst.secondary_joints = &secondary_joints_;
+        inst.secondary_joints = (inst.skin_index == 0) ? &secondary_joints_ : &secondary_joints_2_;
       }
 
-    // State machine: Wriggle/idle ↔ Writhe/walk
-    anim_state_.add_state({"idle", scene_.animations().size() - 2, true});
-    anim_state_.add_state({"walk", scene_.animations().size() - 1, true});
+    // State machine for model1: Wriggle/idle (clip 0) ↔ Writhe/walk (clip 1)
+    anim_state_.add_state({"idle", 0, true});
+    anim_state_.add_state({"walk", 1, true});
     anim_state_.add_transition({"idle", "walk", "speed", engine::AnimConditionOp::Greater, 0.01F, 0.2F});
     anim_state_.add_transition({"walk", "idle", "speed", engine::AnimConditionOp::Less, 0.01F, 0.3F});
     anim_state_.start("idle");
@@ -180,15 +180,18 @@ public:
       if (instance.animation_index >= scene_.animations().size())
         continue;
 
-      anim_state_.tick(delta, instance, scene_.animations());
+      // State machine only drives model1 (skeleton 0)
+      if (instance.skin_index == 0)
+        anim_state_.tick(delta, instance, scene_.animations());
+      else
+        instance.animation_time += delta * instance.animation_speed;
 
       if (instance.secondary_joints && !instance.secondary_joints->empty()) {
         instance.secondary_animation_time += delta * instance.animation_speed;
-        // Keep secondary always opposite of primary
-        const std::uint32_t other_clip =
-            (instance.animation_index + 1) % static_cast<std::uint32_t>(scene_.animations().size());
-        if (instance.secondary_animation_index != other_clip)
-          instance.secondary_animation_index = other_clip;
+        // Keep secondary opposite of primary (assumes clips paired consecutively)
+        const std::uint32_t other = instance.animation_index ^ 1;
+        if (other < scene_.animations().size())
+          instance.secondary_animation_index = other;
       }
 
       if (!anim_state_.is_transitioning() &&
@@ -368,7 +371,8 @@ private:
   RenderState render_state_;
   std::vector<PhysicsEntry> physics_bodies_;
   std::unordered_map<std::uint32_t, std::unique_ptr<engine::physics::HitboxManager>> hitbox_managers_;
-  std::vector<std::uint32_t> secondary_joints_{4, 5, 6, 7, 8, 9, 10}; // upper body
+  std::vector<std::uint32_t> secondary_joints_{4, 5, 6, 7, 8, 9, 10}; // animTest1 upper body
+  std::vector<std::uint32_t> secondary_joints_2_{3, 4, 5};             // animTest2 little arm
   std::unordered_map<std::uint32_t, engine::BoneTRS> joint_overrides_;
   bool bone_override_active_{false};
   engine::AnimStateMachine anim_state_;
