@@ -243,7 +243,8 @@ void DemoApp::run() {
     if (!impl.scene.spot_lights().empty()) {
       const glm::vec3 cam_pos = impl.scene.camera().position();
       const glm::vec3 cam_fwd = impl.scene.camera().look_direction();
-      impl.scene.spot_lights()[0].position = cam_pos + cam_fwd * 0.3F;
+      const glm::vec3 right = glm::normalize(glm::cross(cam_fwd, glm::vec3{0.0F, 1.0F, 0.0F}));
+      impl.scene.spot_lights()[0].position = cam_pos + cam_fwd * 0.5F + right * 0.4F;
       impl.scene.spot_lights()[0].direction = cam_fwd;
     }
 
