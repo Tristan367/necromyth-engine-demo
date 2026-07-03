@@ -94,11 +94,6 @@ public:
       if (inst.skin_index != engine::k_invalid_skin_index) {
         inst.joint_overrides = &joint_overrides_;
         inst.secondary_joints = &secondary_joints_;
-        const std::uint32_t ac = static_cast<std::uint32_t>(scene_.animations().size());
-        if (ac > 1) {
-          inst.secondary_animation_index = (inst.animation_index + 1) % ac;
-          inst.secondary_animation_time = 0.0F;
-        }
       }
 
     // State machine: Wriggle/idle ↔ Writhe/walk
@@ -189,6 +184,11 @@ public:
 
       if (instance.secondary_joints && !instance.secondary_joints->empty()) {
         instance.secondary_animation_time += delta * instance.animation_speed;
+        // Keep secondary always opposite of primary
+        const std::uint32_t other_clip =
+            (instance.animation_index + 1) % static_cast<std::uint32_t>(scene_.animations().size());
+        if (instance.secondary_animation_index != other_clip)
+          instance.secondary_animation_index = other_clip;
       }
 
       if (!anim_state_.is_transitioning() &&
