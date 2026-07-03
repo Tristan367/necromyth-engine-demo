@@ -99,8 +99,8 @@ public:
     // State machine for model1: Wriggle/idle (clip 0) ↔ Writhe/walk (clip 1)
     anim_state_.add_state({"idle", 0, true});
     anim_state_.add_state({"walk", 1, true});
-    anim_state_.add_transition({"idle", "walk", "speed", engine::AnimConditionOp::Greater, 0.01F, 0.2F});
-    anim_state_.add_transition({"walk", "idle", "speed", engine::AnimConditionOp::Less, 0.01F, 0.3F});
+    anim_state_.add_transition({"idle", "walk", "speed", engine::AnimConditionOp::Greater, 0.01F, 1.0F});
+    anim_state_.add_transition({"walk", "idle", "speed", engine::AnimConditionOp::Less, 0.01F, 1.0F});
     anim_state_.start("idle");
   }
 
