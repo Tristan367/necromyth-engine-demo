@@ -148,6 +148,12 @@ void DemoApp::run() {
         continue;
       }
 
+      if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_G &&
+          !impl.debug_ui.wants_keyboard()) {
+        impl.server.toggle_directional_light();
+        continue;
+      }
+
       impl.input.process_event(event, impl.debug_ui, impl.fly_camera);
 
       if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT &&
@@ -232,6 +238,14 @@ void DemoApp::run() {
     // Audio listener follows camera
     impl.audio.set_listener(impl.scene.camera().position(), impl.scene.camera().look_direction(),
                             glm::vec3{0.0F, 1.0F, 0.0F});
+
+    // Spotlight follows camera (flashlight)
+    if (!impl.scene.spot_lights().empty()) {
+      const glm::vec3 cam_pos = impl.scene.camera().position();
+      const glm::vec3 cam_fwd = impl.scene.camera().look_direction();
+      impl.scene.spot_lights()[0].position = cam_pos + cam_fwd * 0.3F;
+      impl.scene.spot_lights()[0].direction = cam_fwd;
+    }
 
     const UiFrameResult ui = impl.debug_ui.begin_frame(impl.scene, delta_seconds, menu_open);
 
