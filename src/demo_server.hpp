@@ -125,7 +125,7 @@ public:
 
     // Spotlight follows camera (flashlight effect)
     scene_.spot_lights().push_back({.position = glm::vec3{0.0F, 2.0F, 0.0F}, .direction = glm::vec3{0.0F, 0.0F, -1.0F},
-                                     .color = {1.0F, 0.95F, 0.7F}, .intensity = 4.0F, .range = 15.0F,
+                                     .color = {1.0F, 0.95F, 0.7F}, .intensity = 1.5F, .range = 15.0F,
                                      .inner_angle = 0.12F, .outer_angle = 0.30F, .casts_shadow = true});
   }
 
