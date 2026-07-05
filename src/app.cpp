@@ -53,7 +53,7 @@ struct DemoApp::Impl {
   std::uint64_t last_frame_counter{};
   bool running{true};
   bool character_mode{false};
-  float physics_accumulator_{0.0F};
+  double physics_accumulator_{0.0};
 
   explicit Impl(engine::EngineConfig config_in)
       : config(std::move(config_in)),
@@ -110,7 +110,7 @@ DemoApp::~DemoApp() = default;
 
 void DemoApp::run() {
   Impl &impl = *impl_;
-  static constexpr float k_fixed_dt = 1.0F / 60.0F;
+  static constexpr double k_fixed_dt = 1.0 / 60.0;
 
   while (impl.running) {
     if (g_quit_requested != 0)
@@ -223,7 +223,7 @@ void DemoApp::run() {
     impl.physics_accumulator_ = std::fmod(impl.physics_accumulator_, k_fixed_dt);
 
     // Interpolate all physics bodies to current frame's alpha
-    const float interp_alpha = impl.physics_accumulator_ / k_fixed_dt;
+    const float interp_alpha = static_cast<float>(impl.physics_accumulator_ / k_fixed_dt);
     impl.server.apply_interpolation(interp_alpha);
 
     // Camera follows character (after physics, before render)
