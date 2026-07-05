@@ -1,5 +1,6 @@
 #pragma once
 
+#include "demo_meshes.hpp"
 #include "demo_scene.hpp"
 #include "debug_renderer.hpp"
 #include "physics/hitbox_manager.hpp"
@@ -127,6 +128,14 @@ public:
     scene_.spot_lights().push_back({.position = glm::vec3{0.0F, 2.0F, 0.0F}, .direction = glm::vec3{0.0F, 0.0F, -1.0F},
                                      .color = {1.0F, 0.95F, 0.7F}, .intensity = 1.5F, .range = 15.0F,
                                      .inner_angle = 0.12F, .outer_angle = 0.30F, .casts_shadow = true});
+
+    // Small spheres at point light positions for visualization
+    const std::uint32_t sphere_mesh = scene_.add_mesh(app::make_sphere_mesh(0.15F, 8, 12));
+    for (const auto &pl : scene_.point_lights())
+      (void)scene_.add_instance({
+          .mesh_index = sphere_mesh,
+          .model = glm::translate(glm::mat4(1.0F), pl.position),
+      });
   }
 
   [[nodiscard]] auto character_position(float interp_alpha = 0.0F) const -> glm::vec3 {
