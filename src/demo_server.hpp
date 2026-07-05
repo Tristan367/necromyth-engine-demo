@@ -121,7 +121,7 @@ public:
     // Test lights
     scene_.point_lights().push_back({.position = { 3.0F, 2.0F, 5.0F}, .color = {1.0F, 0.2F, 0.1F}, .intensity = 2.0F, .range = 6.0F});
     scene_.point_lights().push_back({.position = {-3.0F, 2.0F, 5.0F}, .color = {0.1F, 0.4F, 1.0F}, .intensity = 2.0F, .range = 6.0F});
-    scene_.point_lights().push_back({.position = { 0.0F, 3.0F, 8.0F}, .color = {0.1F, 1.0F, 0.2F}, .intensity = 1.5F, .range = 5.0F});
+    scene_.point_lights().push_back({.position = { 0.0F, 3.0F, 8.0F}, .color = {0.1F, 1.0F, 0.2F}, .intensity = 1.5F, .range = 5.0F, .casts_shadow = true});
 
     // Spotlight follows camera (flashlight effect)
     scene_.spot_lights().push_back({.position = glm::vec3{0.0F, 2.0F, 0.0F}, .direction = glm::vec3{0.0F, 0.0F, -1.0F},
