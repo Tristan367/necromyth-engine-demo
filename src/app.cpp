@@ -119,15 +119,6 @@ void DemoApp::run() {
     const std::uint64_t now_counter = SDL_GetPerformanceCounter();
     const float delta_seconds =
         static_cast<float>(now_counter - impl.last_frame_counter) / static_cast<float>(SDL_GetPerformanceFrequency());
-
-    static std::uint64_t worst_ticks = 0;
-    const std::uint64_t dt_ticks = now_counter - impl.last_frame_counter;
-    if (dt_ticks > worst_ticks) {
-      worst_ticks = dt_ticks;
-      const float ms = 1000.0F / static_cast<float>(SDL_GetPerformanceFrequency()) * dt_ticks;
-      if (ms > 20.0F) std::cout << "frame spike: " << ms << "ms\n";
-    }
-
     impl.last_frame_counter = now_counter;
 
     // Advance input frame before processing events (edge detection)
