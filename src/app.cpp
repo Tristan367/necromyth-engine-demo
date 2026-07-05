@@ -219,8 +219,6 @@ void DemoApp::run() {
       impl.physics_accumulator_ -= k_fixed_dt;
       ++ticks;
     }
-    // Always drain residual to prevent jitter accumulation (Godot: subtraction approach)
-    impl.physics_accumulator_ = std::fmod(impl.physics_accumulator_, k_fixed_dt);
 
     // Interpolate all physics bodies to current frame's alpha
     const float interp_alpha = static_cast<float>(impl.physics_accumulator_ / k_fixed_dt);
