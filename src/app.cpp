@@ -8,7 +8,7 @@
 #include "demo_server.hpp"
 #include "fly_camera.hpp"
 #include "input_router.hpp"
-
+#include "main_timer_sync.hpp"
 #include "platform/sdl_window.hpp"
 #include "renderer/vulkan_context.hpp"
 #include "scene/scene.hpp"
@@ -53,7 +53,7 @@ struct DemoApp::Impl {
   std::uint64_t last_frame_counter{};
   bool running{true};
   bool character_mode{false};
-  double physics_accumulator_{0.0};
+  app::TimerSync timer_sync;
 
   explicit Impl(engine::EngineConfig config_in)
       : config(std::move(config_in)),
@@ -111,6 +111,8 @@ DemoApp::~DemoApp() = default;
 void DemoApp::run() {
   Impl &impl = *impl_;
   static constexpr double k_fixed_dt = 1.0 / 60.0;
+
+  impl.timer_sync.reset();
 
   while (impl.running) {
     if (g_quit_requested != 0)
@@ -210,18 +212,14 @@ void DemoApp::run() {
       input_rgt = world_vel.z;
     }
 
-    // Fixed-timestep physics ticks (max 2 per frame to prevent burst jitter)
-    impl.physics_accumulator_ += delta_seconds;
-    int ticks = 0;
-    while (impl.physics_accumulator_ >= k_fixed_dt && ticks < 2) {
-      impl.server.tick(k_fixed_dt, input_fwd, input_rgt, jump);
+    // Fixed-timestep physics ticks (Godot-style history-smoothed step count)
+    const auto sync_result = impl.timer_sync.advance(delta_seconds);
+    for (int i = 0; i < sync_result.physics_steps; ++i) {
+      impl.server.tick(static_cast<float>(k_fixed_dt), input_fwd, input_rgt, jump);
       update_demo_scene(impl.scene);
-      impl.physics_accumulator_ -= k_fixed_dt;
-      ++ticks;
     }
 
-    // Interpolate all physics bodies to current frame's alpha
-    const float interp_alpha = static_cast<float>(impl.physics_accumulator_ / k_fixed_dt);
+    const float interp_alpha = static_cast<float>(sync_result.interpolation_fraction);
     impl.server.apply_interpolation(interp_alpha);
 
     // Camera follows character (after physics, before render)
