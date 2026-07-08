@@ -345,14 +345,16 @@ private:
   void update_bone_attachments() {
     engine::update_bone_attachments(scene_.skeletons(), scene_.animations(), scene_.instances());
 
-    if (weapon_info_.weapon_instance == 0 && weapon_info_.host_instance == 0) return;
     if (weapon_info_.host_instance >= scene_.instances().size()) return;
-
     const engine::MeshInstance &host = scene_.instances()[weapon_info_.host_instance];
-    if (!host.bone_attachments.empty()) {
-      scene_.instance(weapon_info_.weapon_instance).model =
+    if (host.bone_attachments.size() < 2) return;
+
+    if (weapon_info_.weapon_big_arm != 0)
+      scene_.instance(weapon_info_.weapon_big_arm).model =
           host.bone_attachments[0].world_transform;
-    }
+    if (weapon_info_.weapon_little_arm != 0)
+      scene_.instance(weapon_info_.weapon_little_arm).model =
+          host.bone_attachments[1].world_transform;
   }
 
   struct PhysicsEntry {

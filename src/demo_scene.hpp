@@ -20,7 +20,8 @@ struct PhysicsObjDesc {
 };
 
 struct WeaponAttachmentInfo {
-  std::uint32_t weapon_instance{};
+  std::uint32_t weapon_big_arm{};
+  std::uint32_t weapon_little_arm{};
   std::uint32_t host_instance{};
 };
 
