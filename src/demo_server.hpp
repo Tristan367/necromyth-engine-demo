@@ -314,29 +314,24 @@ public:
 
 private:
   void update_hitboxes() {
-    for (const engine::MeshInstance &instance : scene_.instances()) {
+    for (engine::MeshInstance &instance : scene_.instances()) {
+      if (!instance.alive) continue;
       if (instance.skin_index >= scene_.skeletons().size()) continue;
-      if (!instance.pose_layers || instance.pose_layers->empty()) continue;
+      if (instance.cached_bone_worlds.empty()) continue;
 
       auto it = hitbox_managers_.find(instance.skin_index);
       if (it == hitbox_managers_.end()) continue;
 
-      const engine::SkeletonAsset &skel = scene_.skeletons()[instance.skin_index];
-      std::vector<glm::mat4> bone_worlds_local;
-      std::vector<glm::mat4> unused_joint_matrices;
-      engine::compute_joint_matrices_for_instance(
-          skel, instance, scene_.animations(),
-          unused_joint_matrices, &bone_worlds_local);
-
-      for (glm::mat4 &bw : bone_worlds_local)
+      std::vector<glm::mat4> bone_worlds = instance.cached_bone_worlds;
+      for (glm::mat4 &bw : bone_worlds)
         bw = instance.model * bw;
 
-      it->second->update(skel, bone_worlds_local);
+      it->second->update(scene_.skeletons()[instance.skin_index], bone_worlds);
     }
   }
 
   void update_bone_attachments() {
-    engine::update_bone_attachments(scene_.skeletons(), scene_.animations(), scene_.instances());
+    engine::update_bone_attachments(scene_.instances());
   }
 
   struct PhysicsEntry {
