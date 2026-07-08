@@ -52,7 +52,7 @@ void populate_demo_scene(engine::Scene &scene) {
                                    .intensity = 3.0F, .range = 10.0F, .casts_shadow = true});
   // Stress test
   for (int i = 0; i < 9; ++i) {
-    float angle = float(i) * 6.283185f / 9.0f;
+    float angle = float(i) * std::numbers::pi_v<float> * 2.0F / 9.0f;
     float x = cos(angle) * 4.0f;
     float z = sin(angle) * 4.0f;
     scene.point_lights().push_back({.position = {x, 1.5f, z},
