@@ -43,7 +43,6 @@ struct DemoApp::Impl {
   std::vector<app::PhysicsObjDesc> obj_descs_;
   std::uint32_t char_instance_{};
   engine::MeshSource trimesh_source_;
-  app::WeaponAttachmentInfo weapon_info_{};
   engine::Scene scene;
   engine::VulkanContext vulkan;
   DemoServer server;
@@ -61,9 +60,9 @@ struct DemoApp::Impl {
   explicit Impl(engine::EngineConfig config_in)
       : config(std::move(config_in)),
         window("Necromyth Engine Demo", config.window_width, config.window_height),
-        scene(create_demo_scene(&obj_descs_, &char_instance_, &trimesh_source_, &weapon_info_)),
+        scene(create_demo_scene(&obj_descs_, &char_instance_, &trimesh_source_)),
         vulkan(window.handle(), config, scene),
-        server(scene, obj_descs_, char_instance_, &trimesh_source_, weapon_info_),
+        server(scene, obj_descs_, char_instance_, &trimesh_source_),
         debug_ui(window.handle(), vulkan) {
     std::signal(SIGINT, on_quit_signal);
     std::signal(SIGTERM, on_quit_signal);

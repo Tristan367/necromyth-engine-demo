@@ -31,7 +31,6 @@ constexpr std::size_t k_tile_array_layer_count = 6;
 static std::vector<app::PhysicsObjDesc> obj_descs;
 static std::uint32_t character_sphere_index;
 static engine::MeshSource trimesh_mesh;
-static app::WeaponAttachmentInfo weapon_info;
 
 static void add_physics_test_objects(engine::Scene &scene);
 
@@ -230,31 +229,30 @@ void populate_demo_scene(engine::Scene &scene) {
   {
     const engine::LoadedGltfModel weapon_model =
         engine::load_gltf_model(asset_path("/models/weaponTest.glb"));
+    std::uint32_t weapon_big = 0;
+    std::uint32_t weapon_little = 0;
     if (!weapon_model.primitives.empty()) {
       const std::uint32_t before_count = static_cast<std::uint32_t>(scene.instances().size());
-      // Big arm weapon
       add_gltf_model_instances(scene, texture_cache, weapon_model,
                                lifted(glm::vec3(8.0F, 1.5F, 0.0F)));
-      weapon_info.weapon_big_arm = before_count;
-      // Little arm weapon (second instance)
+      weapon_big = before_count;
       add_gltf_model_instances(scene, texture_cache, weapon_model,
                                lifted(glm::vec3(8.0F, 1.5F, 0.0F)));
-      weapon_info.weapon_little_arm = before_count + static_cast<std::uint32_t>(weapon_model.primitives.size());
+      weapon_little = before_count + static_cast<std::uint32_t>(weapon_model.primitives.size());
     }
 
-    // Find model2's first instance (has skin_index > 0)
+    // Find model2's first instance and attach weapons
     for (std::uint32_t i = 0; i < static_cast<std::uint32_t>(scene.instances().size()); ++i) {
       const engine::MeshInstance &inst = scene.instances()[i];
       if (inst.skin_index != engine::k_invalid_skin_index && inst.skin_index > 0) {
-        weapon_info.host_instance = i;
+        if (weapon_big != 0)
+          scene.instance(i).bone_attachments.push_back(
+              engine::BoneAttachment{.joint_index = 9, .target_instance = weapon_big});
+        if (weapon_little != 0)
+          scene.instance(i).bone_attachments.push_back(
+              engine::BoneAttachment{.joint_index = 5, .target_instance = weapon_little});
         break;
       }
-    }
-    if (weapon_info.weapon_big_arm != 0) {
-      scene.instance(weapon_info.host_instance).bone_attachments.push_back(
-          engine::BoneAttachment{.joint_index = 9});
-      scene.instance(weapon_info.host_instance).bone_attachments.push_back(
-          engine::BoneAttachment{.joint_index = 5});
     }
   }
 
@@ -295,8 +293,7 @@ void populate_demo_scene(engine::Scene &scene) {
 auto create_demo_scene(
     std::vector<app::PhysicsObjDesc> *out_obj_descs,
     std::uint32_t *out_char_instance,
-    engine::MeshSource *out_trimesh_mesh,
-    app::WeaponAttachmentInfo *out_weapon_info) -> engine::Scene {
+    engine::MeshSource *out_trimesh_mesh) -> engine::Scene {
   engine::Scene scene;
   populate_demo_scene(scene);
   if (out_obj_descs)
@@ -305,12 +302,9 @@ auto create_demo_scene(
     *out_char_instance = character_sphere_index;
   if (out_trimesh_mesh)
     *out_trimesh_mesh = std::move(trimesh_mesh);
-  if (out_weapon_info)
-    *out_weapon_info = weapon_info;
   obj_descs.clear();
   character_sphere_index = 0;
   trimesh_mesh = {};
-  weapon_info = {};
   return scene;
 }
 

@@ -24,10 +24,8 @@
 class DemoServer {
 public:
   explicit DemoServer(engine::Scene &scene, const std::vector<app::PhysicsObjDesc> &obj_descs,
-                       std::uint32_t character_instance, const engine::MeshSource *trimesh_source,
-                       app::WeaponAttachmentInfo weapon_info = {})
-      : scene_{scene}, physics_(65536), character_instance_{character_instance},
-        weapon_info_{weapon_info} {
+                       std::uint32_t character_instance, const engine::MeshSource *trimesh_source)
+      : scene_{scene}, physics_(65536), character_instance_{character_instance} {
     if (trimesh_source && !trimesh_source->vertices.empty())
       (void)physics_.create_static_mesh(*trimesh_source, glm::vec3(0.0F, -3.0F, 0.0F));
     else
@@ -344,17 +342,6 @@ private:
 
   void update_bone_attachments() {
     engine::update_bone_attachments(scene_.skeletons(), scene_.animations(), scene_.instances());
-
-    if (weapon_info_.host_instance >= scene_.instances().size()) return;
-    const engine::MeshInstance &host = scene_.instances()[weapon_info_.host_instance];
-    if (host.bone_attachments.size() < 2) return;
-
-    if (weapon_info_.weapon_big_arm != 0)
-      scene_.instance(weapon_info_.weapon_big_arm).model =
-          host.bone_attachments[0].world_transform;
-    if (weapon_info_.weapon_little_arm != 0)
-      scene_.instance(weapon_info_.weapon_little_arm).model =
-          host.bone_attachments[1].world_transform;
   }
 
   struct PhysicsEntry {
@@ -384,7 +371,6 @@ private:
   bool dir_light_on_{true};
   engine::AnimStateMachine anim_state_;
   engine::AnimStateMachine anim_state_2_;
-  app::WeaponAttachmentInfo weapon_info_{};
   std::size_t upper_body_layer_{0};
   bool upper_body_active_{false};
   glm::vec3 smoothed_input_{0, 0, 0};
