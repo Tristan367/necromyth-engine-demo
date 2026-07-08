@@ -92,12 +92,7 @@ public:
               << "Hitbox managers: " << hitbox_managers_.size() << "\n";
 
     // State machine for model1: Wriggle/idle (clip 0) ↔ Writhe/walk (clip 1).
-    // Base layer 0 = full-body locomotion (crossfades idle↔walk automatically).
-    anim_state_.add_state({"idle", 0, true});
-    anim_state_.add_state({"walk", 1, true});
-    anim_state_.add_transition({"idle", "walk", "speed", engine::AnimConditionOp::Greater, 0.01F, 0.25F});
-    anim_state_.add_transition({"walk", "idle", "speed", engine::AnimConditionOp::Less, 0.01F, 0.25F});
-    anim_state_.start("idle");
+    anim_state_.add_speed_driven_locomotion("idle", 0, "walk", 1, 0.01F, 0.25F);
     // Layer 1 = masked upper-body override (E key), starts inactive (weight 0).
     upper_body_layer_ = anim_state_.add_override_layer(&secondary_joints_, 0.0F);
 
