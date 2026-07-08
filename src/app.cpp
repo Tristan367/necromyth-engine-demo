@@ -55,6 +55,7 @@ struct DemoApp::Impl {
   bool running{true};
   bool character_mode{false};
   app::TimerSync timer_sync;
+  std::uint32_t snow_emitter_{};
 
   explicit Impl(engine::EngineConfig config_in)
       : config(std::move(config_in)),
@@ -97,6 +98,24 @@ struct DemoApp::Impl {
       audio.set_position(music_h, glm::vec3{0.0F, 1.5F, 0.0F});
       audio.play(music_h);
     }
+
+    // Snow particle emitter — spawns particles in a 16m area above the camera
+    auto &ps = vulkan.particle_system();
+    snow_emitter_ = ps.add_emitter({
+        .position = {0.0F, 20.0F, 0.0F},
+        .rate = 200.0F,
+        .on_emit = [](engine::ParticleSystem::Particle &p) {
+          p.pos += glm::vec3{(rand() % 2000 - 1000) * 0.008F, 0.0F, (rand() % 2000 - 1000) * 0.008F};
+          p.vel = glm::vec3{(rand() % 200 - 100) * 0.01F, -2.0F - (rand() % 200) * 0.01F,
+                            (rand() % 200 - 100) * 0.01F};
+          p.lifetime = 8.0F;
+        },
+        .on_update = [](engine::ParticleSystem::Particle &p, float dt) -> bool {
+          p.vel.y -= 9.81F * dt;
+          p.pos += p.vel * dt;
+          return p.pos.y > -2.0F;
+        },
+    });
   }
 
   ~Impl() {
@@ -221,6 +240,8 @@ void DemoApp::run() {
       impl.server.tick(static_cast<float>(k_fixed_dt), input_fwd, input_rgt, jump);
       update_demo_scene(impl.scene);
     }
+
+    impl.vulkan.particle_system().update(delta_seconds);
 
     const float interp_alpha = static_cast<float>(sync_result.interpolation_fraction);
     impl.server.apply_interpolation(interp_alpha);
