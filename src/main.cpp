@@ -17,7 +17,7 @@ auto main(int argc, char **argv) -> int {
 
     engine::resolve_gpu_selection(cli.config, cli.interactive_gpu_pick);
 
-    app::DemoApp app(cli.config);
+    app::DemoApp app(std::move(cli.config));
     app.run();
   } catch (const std::exception &error) {
     std::cerr << error.what() << '\n';
