@@ -70,7 +70,7 @@ public:
     float char_radius = k_default_char_radius;
     float char_height = k_default_char_height;
 
-    for (const engine::SkeletonAsset &skel : scene_.skeletons()) {
+      for (engine::SkeletonAsset &skel : scene_.skeletons()) {
       if (skel.body_collider) {
         const engine::BodyColliderDef &def = *skel.body_collider;
         if (def.shape == engine::BodyColliderDef::Shape::Capsule) {
