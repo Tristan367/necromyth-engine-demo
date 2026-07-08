@@ -18,6 +18,7 @@
 #include <SDL3/SDL_timer.h>
 
 #include <csignal>
+#include <atomic>
 #include <iostream>
 #include <stdexcept>
 #include <utility>
@@ -27,10 +28,10 @@ namespace app {
 
 namespace {
 
-volatile std::sig_atomic_t g_quit_requested = 0;
+std::atomic<std::sig_atomic_t> g_quit_requested = 0;
 
 void on_quit_signal(int) {
-  g_quit_requested = 1;
+  g_quit_requested.store(1, std::memory_order_relaxed);
 }
 
 } // namespace
@@ -115,7 +116,7 @@ void DemoApp::run() {
   impl.timer_sync.reset();
 
   while (impl.running) {
-    if (g_quit_requested != 0)
+    if (g_quit_requested.load(std::memory_order_relaxed) != 0)
       impl.running = false;
 
     const std::uint64_t now_counter = SDL_GetPerformanceCounter();
@@ -205,7 +206,9 @@ void DemoApp::run() {
       jump = im.just_pressed("jump");
 
       const glm::vec3 look = impl.fly_camera.forward();
-      const glm::vec3 fwd = glm::normalize(glm::vec3(look.x, 0.0F, look.z));
+      const glm::vec3 horiz = glm::vec3(look.x, 0.0F, look.z);
+      const float len2 = glm::dot(horiz, horiz);
+      const glm::vec3 fwd = len2 > 1e-10F ? glm::normalize(horiz) : glm::vec3(0.0F, 0.0F, -1.0F);
       const glm::vec3 rgt = glm::normalize(glm::cross(fwd, glm::vec3(0.0F, 1.0F, 0.0F)));
       const glm::vec3 world_vel = fwd * input_fwd + rgt * input_rgt;
       input_fwd = world_vel.x;
@@ -235,11 +238,19 @@ void DemoApp::run() {
     impl.audio.set_listener(impl.scene.camera().position(), impl.scene.camera().look_direction(),
                             glm::vec3{0.0F, 1.0F, 0.0F});
 
+    // Point light follows character capsule (above head)
+    if (!impl.scene.point_lights().empty()) {
+      const glm::vec3 char_pos = impl.server.character_position(interp_alpha);
+      impl.scene.point_lights()[0].position = glm::vec3(char_pos.x, char_pos.y + 1.5F, char_pos.z);
+    }
+
     // Spotlight follows camera (flashlight)
     if (!impl.scene.spot_lights().empty()) {
       const glm::vec3 cam_pos = impl.scene.camera().position();
       const glm::vec3 cam_fwd = impl.scene.camera().look_direction();
-      const glm::vec3 right = glm::normalize(glm::cross(cam_fwd, glm::vec3{0.0F, 1.0F, 0.0F}));
+      const glm::vec3 cross_fwd_up = glm::cross(cam_fwd, glm::vec3{0.0F, 1.0F, 0.0F});
+      const glm::vec3 right = glm::dot(cross_fwd_up, cross_fwd_up) > 1e-10F
+          ? glm::normalize(cross_fwd_up) : glm::vec3{1.0F, 0.0F, 0.0F};
       impl.scene.spot_lights()[0].position = cam_pos + cam_fwd * 0.5F + right * 0.4F;
       // Angle slightly inward toward center and down (like holding a flashlight)
       impl.scene.spot_lights()[0].direction = glm::normalize(cam_fwd - right * 0.3F - glm::vec3{0.0F, 0.15F, 0.0F});

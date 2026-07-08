@@ -81,7 +81,7 @@ namespace app {
   return mesh;
 }
 
-inline auto make_cube_mesh(float half = 0.5F) -> engine::MeshSource {
+[[nodiscard]] inline auto make_cube_mesh(float half = 0.5F) -> engine::MeshSource {
   return make_box_mesh(half, half, half);
 }
 
@@ -199,7 +199,7 @@ inline auto make_cube_mesh(float half = 0.5F) -> engine::MeshSource {
   return mesh;
 }
 
-inline auto make_capsule_mesh(float radius, float half_height,
+[[nodiscard]] inline auto make_capsule_mesh(float radius, float half_height,
                                int segments = 8, int rings = 4) -> engine::MeshSource {
   return make_capsule_mesh(radius, radius, half_height, segments, rings);
 }
@@ -225,8 +225,10 @@ inline auto make_capsule_mesh(float radius, float half_height,
     const float zb = bottom_radius * std::sin(theta);
     const float xt = top_radius * std::cos(theta);
     const float zt = top_radius * std::sin(theta);
-    mesh.vertices.push_back(v(xb, -half_height, zb, xb / bottom_radius, 0, zb / bottom_radius));
-    mesh.vertices.push_back(v(xt, half_height, zt, xt / top_radius, 0, zt / top_radius));
+    const float inv_br = bottom_radius > 0.001F ? 1.0F / bottom_radius : 0.0F;
+    const float inv_tr = top_radius > 0.001F ? 1.0F / top_radius : 0.0F;
+    mesh.vertices.push_back(v(xb, -half_height, zb, xb * inv_br, 0, zb * inv_br));
+    mesh.vertices.push_back(v(xt, half_height, zt, xt * inv_tr, 0, zt * inv_tr));
   }
 
   // Body quads

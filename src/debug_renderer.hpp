@@ -19,7 +19,7 @@
 
 #include <atomic>
 
-namespace {
+namespace debug_renderer_detail {
 
 struct BatchImpl final : public JPH::RefTargetVirtual {
   JPH_OVERRIDE_NEW_DELETE
@@ -30,7 +30,7 @@ private:
   std::atomic<JPH::uint32> ref_ = 0;
 };
 
-} // namespace
+} // namespace debug_renderer_detail
 
 class JoltDebugRenderer : public JPH::DebugRenderer {
 public:
@@ -54,7 +54,7 @@ public:
   void DrawText3D(JPH::RVec3Arg, const std::string_view &, JPH::ColorArg, float) override {}
 
   Batch CreateTriangleBatch(const Triangle *triangles, int count) override {
-    auto *b = new BatchImpl;
+    auto *b = new debug_renderer_detail::BatchImpl;
     if (triangles && count > 0)
       b->triangles.assign(triangles, triangles + count);
     return b;
@@ -62,7 +62,7 @@ public:
 
   Batch CreateTriangleBatch(const Vertex *verts, int vcount,
                             const std::uint32_t *indices, int icount) override {
-    auto *b = new BatchImpl;
+    auto *b = new debug_renderer_detail::BatchImpl;
     if (verts && vcount > 0 && indices && icount > 0) {
       b->triangles.resize(icount / 3);
       for (size_t t = 0; t < b->triangles.size(); ++t) {
@@ -82,7 +82,7 @@ public:
     // Use second-lowest LOD for a balance of detail vs performance
     size_t lod_idx = geo->mLODs.size() > 1 ? geo->mLODs.size() - 2 : 0;
     const LOD &lod = geo->mLODs[lod_idx];
-    auto *batch = static_cast<const BatchImpl *>(lod.mTriangleBatch.GetPtr());
+    auto *batch = static_cast<const debug_renderer_detail::BatchImpl *>(lod.mTriangleBatch.GetPtr());
     if (!batch) return;
     for (const auto &tri : batch->triangles) {
       JPH::RVec3 v0 = m * JPH::Vec3(tri.mV[0].mPosition);

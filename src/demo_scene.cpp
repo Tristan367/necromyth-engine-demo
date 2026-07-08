@@ -23,14 +23,7 @@ namespace app {
 
 namespace {
 
-constexpr auto tile_array_layers = std::array{
-    "brick.png",
-    "dirt.png",
-    "concrete.png",
-    "bark0.png",
-    "ceiling0.png",
-    "grass.png",
-};
+constexpr std::size_t k_tile_array_layer_count = 6;
 
 } // namespace
 
@@ -54,6 +47,21 @@ void populate_demo_scene(engine::Scene &scene) {
   scene.directional_light().intensity = 1.0F;
   scene.directional_light().ambient = 0.18F;
   scene.shadow_settings() = engine::shadow_settings_from_environment();
+
+  scene.point_lights().push_back({.position = {0.0F, 0.0F, 0.0F}, .color = {1.0F, 0.95F, 0.9F},
+                                   .intensity = 3.0F, .range = 10.0F, .casts_shadow = true});
+  // Stress test
+  for (int i = 0; i < 9; ++i) {
+    float angle = float(i) * 6.283185f / 9.0f;
+    float x = cos(angle) * 4.0f;
+    float z = sin(angle) * 4.0f;
+    scene.point_lights().push_back({.position = {x, 1.5f, z},
+                                     .color = {0.6f + (i & 1) * 0.4f, 0.5f + (i & 2) * 0.25f, 0.5f + (i & 4) * 0.25f},
+                                     .intensity = 2.0f, .range = 8.0f, .casts_shadow = true});
+  }
+  scene.spot_lights().push_back({.position = glm::vec3{0.0F, 2.0F, 0.0F}, .direction = glm::vec3{0.0F, 0.0F, -1.0F},
+                                  .color = {1.0F, 0.95F, 0.7F}, .intensity = 1.5F, .range = 15.0F,
+                                  .inner_angle = 0.12F, .outer_angle = 0.30F, .casts_shadow = true});
 
   (void)scene.add_instance({
       .mesh_index = assets.sky_mesh,
@@ -143,7 +151,7 @@ void populate_demo_scene(engine::Scene &scene) {
     const float angle =
         std::numbers::pi_v<float> * 2.0F * static_cast<float>(ring_index) / static_cast<float>(k_stress_ring_count);
     const glm::vec3 position{std::cos(angle) * 9.5F, 1.6F, std::sin(angle) * 9.5F};
-    const std::uint32_t array_layer = static_cast<std::uint32_t>(ring_index % tile_array_layers.size());
+    const std::uint32_t array_layer = static_cast<std::uint32_t>(ring_index % k_tile_array_layer_count);
 
     (void)scene.add_instance({
         .mesh_index = assets.torus_mesh,
@@ -248,9 +256,6 @@ void populate_demo_scene(engine::Scene &scene) {
       std::cout << "Loaded trimesh terrain: " << terrain.mesh.vertices.size() << " verts\n";
     }
   }
-
-  (void)texture_cache;
-  (void)alpha_test_texture;
 }
 
 auto create_demo_scene(

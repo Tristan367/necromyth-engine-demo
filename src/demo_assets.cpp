@@ -63,8 +63,10 @@ constexpr auto tile_array_layers = std::array{
     engine::Scene &scene,
     std::unordered_map<std::string, std::uint32_t> &cache,
     const engine::LoadedGltfMaterial &material) -> std::uint32_t {
-  if (!material.base_color_texture_path)
-    throw std::runtime_error("glTF primitive is missing a base color texture path");
+  if (!material.base_color_texture_path) {
+    std::cerr << "Warning: glTF primitive missing base color texture, using fallback\n";
+    return add_cached_texture(scene, cache, std::string(asset_path("/textures/gray.png")));
+  }
 
   return add_cached_texture(scene, cache, *material.base_color_texture_path);
 }

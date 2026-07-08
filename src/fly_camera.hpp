@@ -87,6 +87,9 @@ public:
     const float t = mouse_lerp_factor_ * delta_seconds;
     yaw_   = std::lerp(yaw_,   target_yaw_,   t);
     pitch_ = std::lerp(pitch_, target_pitch_, t);
+    // Prevent unbounded yaw accumulation (float precision loss over long sessions)
+    yaw_ = std::fmod(yaw_ + glm::pi<float>(), glm::two_pi<float>()) - glm::pi<float>();
+    target_yaw_ = std::fmod(target_yaw_ + glm::pi<float>(), glm::two_pi<float>()) - glm::pi<float>();
   }
 
 private:
@@ -101,7 +104,9 @@ private:
 
   void update_position(engine::Camera &camera, float delta_seconds, const engine::InputMap &im) {
     const glm::vec3 forward = orientation_forward();
-    const glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0.0F, 1.0F, 0.0F)));
+    const glm::vec3 cross_fwd_up = glm::cross(forward, glm::vec3(0.0F, 1.0F, 0.0F));
+    const glm::vec3 right = glm::dot(cross_fwd_up, cross_fwd_up) > 1e-10F
+        ? glm::normalize(cross_fwd_up) : glm::vec3(1.0F, 0.0F, 0.0F);
     const glm::vec3 up{0.0F, 1.0F, 0.0F};
 
     const float speed = im.pressed("fly_sprint") ? fast_speed_ : move_speed_;
