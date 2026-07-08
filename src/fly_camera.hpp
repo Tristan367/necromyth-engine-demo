@@ -85,10 +85,11 @@ public:
 
   void update_orientation(float delta_seconds) {
     const float t = mouse_lerp_factor_ * delta_seconds;
-    yaw_   = std::lerp(yaw_,   target_yaw_,   t);
     pitch_ = std::lerp(pitch_, target_pitch_, t);
-    // Prevent unbounded yaw accumulation (float precision loss over long sessions)
-    yaw_ = std::fmod(yaw_ + glm::pi<float>(), glm::two_pi<float>()) - glm::pi<float>();
+    // Shortest-path yaw interpolation to prevent 360° twist when wrapping
+    float diff = target_yaw_ - yaw_;
+    diff = std::fmod(diff + glm::pi<float>(), glm::two_pi<float>()) - glm::pi<float>();
+    yaw_ = std::fmod(yaw_ + diff * t + glm::pi<float>(), glm::two_pi<float>()) - glm::pi<float>();
     target_yaw_ = std::fmod(target_yaw_ + glm::pi<float>(), glm::two_pi<float>()) - glm::pi<float>();
   }
 
