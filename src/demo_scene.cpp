@@ -227,30 +227,21 @@ void populate_demo_scene(engine::Scene &scene) {
 
   // Load weapons and attach to model2's arm tips
   {
-    const engine::LoadedGltfModel weapon_model =
-        engine::load_gltf_model(asset_path("/models/weaponTest.glb"));
-    std::uint32_t weapon_big = 0;
-    std::uint32_t weapon_little = 0;
-    if (!weapon_model.primitives.empty()) {
-      const std::uint32_t before_count = static_cast<std::uint32_t>(scene.instances().size());
-      add_gltf_model_instances(scene, texture_cache, weapon_model,
-                               lifted(glm::vec3(8.0F, 1.5F, 0.0F)));
-      weapon_big = before_count;
-      add_gltf_model_instances(scene, texture_cache, weapon_model,
-                               lifted(glm::vec3(8.0F, 1.5F, 0.0F)));
-      weapon_little = before_count + static_cast<std::uint32_t>(weapon_model.primitives.size());
-    }
+    const auto weapon_result = engine::import_gltf(scene, asset_path("/models/weaponTest.glb"),
+                                                     lifted(glm::vec3(8.0F, 1.5F, 0.0F)));
+    const auto weapon2_result = engine::import_gltf(scene, asset_path("/models/weaponTest.glb"),
+                                                      lifted(glm::vec3(8.0F, 1.5F, 0.0F)));
 
-    // Find model2's first instance and attach weapons
+    // Find model2's first instance and attach weapons to arm tips
     for (std::uint32_t i = 0; i < static_cast<std::uint32_t>(scene.instances().size()); ++i) {
       const engine::MeshInstance &inst = scene.instances()[i];
       if (inst.skin_index != engine::k_invalid_skin_index && inst.skin_index > 0) {
-        if (weapon_big != 0)
+        if (weapon_result.first_instance != 0)
           scene.instance(i).bone_attachments.push_back(
-              engine::BoneAttachment{.joint_index = 9, .target_instance = weapon_big});
-        if (weapon_little != 0)
+              engine::BoneAttachment{.joint_index = 9, .target_instance = weapon_result.first_instance});
+        if (weapon2_result.first_instance != 0)
           scene.instance(i).bone_attachments.push_back(
-              engine::BoneAttachment{.joint_index = 5, .target_instance = weapon_little});
+              engine::BoneAttachment{.joint_index = 5, .target_instance = weapon2_result.first_instance});
         break;
       }
     }

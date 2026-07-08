@@ -247,61 +247,30 @@ void add_demo_sphere_instances(
 
 void add_animation_test_model(
     engine::Scene &scene,
-    std::unordered_map<std::string, std::uint32_t> &texture_cache) {
-  const engine::LoadedGltfModel anim_model = engine::load_gltf_model(asset_path("/models/animationTest.glb"));
-  if (anim_model.primitives.empty() || anim_model.skeletons.empty() || anim_model.animations.empty())
-    return;
-
-  add_gltf_model_instances(scene, texture_cache, anim_model, lifted(glm::vec3(0.0F, 1.5F, 0.0F)));
-
-  engine::SkeletonAsset skeleton = anim_model.skeletons.front();
-  load_model_metadata(asset_path("/models/animationTest.glb"), skeleton);
-
-  const std::uint32_t skeleton_index = scene.add_skeleton(std::move(skeleton));
-
-  for (const engine::AnimationClip &anim : anim_model.animations)
-    (void)scene.add_animation(anim);
-
-  const std::uint32_t first_instance =
-      static_cast<std::uint32_t>(scene.instances().size() - anim_model.primitives.size());
-  for (std::size_t i = 0; i < anim_model.primitives.size(); ++i)
-    scene.instance(first_instance + static_cast<std::uint32_t>(i)).skin_index = skeleton_index;
-
-  std::cout << "Loaded animation model with " << anim_model.animations.size()
-            << " animations (" << anim_model.skeletons.front().joint_nodes.size() << " bones):";
-  for (const engine::AnimationClip &anim : anim_model.animations)
-    std::cout << ' ' << anim.name;
-  std::cout << '\n';
+    std::unordered_map<std::string, std::uint32_t> & /*texture_cache*/) {
+  const auto before_anims = scene.animations().size();
+  const auto result = engine::import_gltf(scene, asset_path("/models/animationTest.glb"),
+                                           lifted(glm::vec3(0.0F, 1.5F, 0.0F)));
+  if (result.skeleton_index != engine::k_invalid_skin_index) {
+    load_model_metadata(asset_path("/models/animationTest.glb"),
+                        scene.skeletons()[result.skeleton_index]);
+    std::cout << "Loaded animation model with " << (scene.animations().size() - before_anims)
+              << " animations ("
+              << scene.skeletons()[result.skeleton_index].joint_nodes.size() << " bones)\n";
+  }
 }
 
 void add_animation_test_model2(
     engine::Scene &scene,
-    std::unordered_map<std::string, std::uint32_t> &texture_cache) {
-  const engine::LoadedGltfModel model =
-      engine::load_gltf_model(asset_path("/models/animationTest2.glb"));
-  if (model.primitives.empty() || model.skeletons.empty() || model.animations.empty())
-    return;
-
-  add_gltf_model_instances(scene, texture_cache, model, lifted(glm::vec3(8.0F, 1.5F, 0.0F)));
-
-  engine::SkeletonAsset skeleton = model.skeletons.front();
-  load_model_metadata(asset_path("/models/animationTest2.glb"), skeleton);
-
-  const std::uint32_t skeleton_index = scene.add_skeleton(std::move(skeleton));
-
-  for (const engine::AnimationClip &anim : model.animations)
-    (void)scene.add_animation(anim);
-
-  const std::uint32_t first_instance =
-      static_cast<std::uint32_t>(scene.instances().size() - model.primitives.size());
-  for (std::size_t i = 0; i < model.primitives.size(); ++i)
-    scene.instance(first_instance + static_cast<std::uint32_t>(i)).skin_index = skeleton_index;
-
-  std::cout << "Loaded animation model 2 with " << model.animations.size()
-            << " animations (" << model.skeletons.front().joint_nodes.size() << " bones):";
-  for (const engine::AnimationClip &anim : model.animations)
-    std::cout << ' ' << anim.name;
-  std::cout << '\n';
+    std::unordered_map<std::string, std::uint32_t> & /*texture_cache*/) {
+  const auto before_anims = scene.animations().size();
+  const auto result = engine::import_gltf(scene, asset_path("/models/animationTest2.glb"),
+                                           lifted(glm::vec3(8.0F, 1.5F, 0.0F)));
+  if (result.skeleton_index != engine::k_invalid_skin_index) {
+    std::cout << "Loaded animation model 2 with " << (scene.animations().size() - before_anims)
+              << " animations ("
+              << scene.skeletons()[result.skeleton_index].joint_nodes.size() << " bones)\n";
+  }
 }
 
 TrimeshData load_trimesh_data() {
