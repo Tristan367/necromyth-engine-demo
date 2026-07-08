@@ -3,6 +3,7 @@
 #include "demo_anim.hpp"
 #include "demo_assets.hpp"
 #include "demo_meshes.hpp"
+#include "renderer/gltf_loader.hpp"
 #include "scene/mesh_instance.hpp"
 #include "scene/scene.hpp"
 #include "scene/shadow_utils.hpp"
@@ -30,6 +31,8 @@ constexpr std::size_t k_tile_array_layer_count = 6;
 static std::vector<app::PhysicsObjDesc> obj_descs;
 static std::uint32_t character_sphere_index;
 static engine::MeshSource trimesh_mesh;
+static std::uint32_t weapon_instance_index;
+static std::uint32_t attachment_host_instance_index;
 
 static void add_physics_test_objects(engine::Scene &scene);
 
@@ -224,6 +227,31 @@ void populate_demo_scene(engine::Scene &scene) {
   add_animation_test_model(scene, texture_cache);
   add_animation_test_model2(scene, texture_cache);
 
+  // Load weapon and attach to model2's big-arm tip (joint 9)
+  {
+    const engine::LoadedGltfModel weapon_model =
+        engine::load_gltf_model(asset_path("/models/weaponTest.glb"));
+    if (!weapon_model.primitives.empty()) {
+      const std::uint32_t before_count = static_cast<std::uint32_t>(scene.instances().size());
+      add_gltf_model_instances(scene, texture_cache, weapon_model,
+                               lifted(glm::vec3(8.0F, 1.5F, 0.0F)));
+      weapon_instance_index = before_count;
+    }
+
+    // Find model2's first instance (has skin_index > 0)
+    for (std::uint32_t i = 0; i < static_cast<std::uint32_t>(scene.instances().size()); ++i) {
+      const engine::MeshInstance &inst = scene.instances()[i];
+      if (inst.skin_index != engine::k_invalid_skin_index && inst.skin_index > 0) {
+        attachment_host_instance_index = i;
+        break;
+      }
+    }
+    if (weapon_instance_index != 0) {
+      scene.instance(attachment_host_instance_index).bone_attachments.push_back(
+          engine::BoneAttachment{.joint_index = 9});
+    }
+  }
+
   add_physics_test_objects(scene);
 
   // Character visual (capsule that will follow character position)
@@ -261,7 +289,8 @@ void populate_demo_scene(engine::Scene &scene) {
 auto create_demo_scene(
     std::vector<app::PhysicsObjDesc> *out_obj_descs,
     std::uint32_t *out_char_instance,
-    engine::MeshSource *out_trimesh_mesh) -> engine::Scene {
+    engine::MeshSource *out_trimesh_mesh,
+    app::WeaponAttachmentInfo *out_weapon_info) -> engine::Scene {
   engine::Scene scene;
   populate_demo_scene(scene);
   if (out_obj_descs)
@@ -270,9 +299,13 @@ auto create_demo_scene(
     *out_char_instance = character_sphere_index;
   if (out_trimesh_mesh)
     *out_trimesh_mesh = std::move(trimesh_mesh);
+  if (out_weapon_info)
+    *out_weapon_info = {weapon_instance_index, attachment_host_instance_index};
   obj_descs.clear();
   character_sphere_index = 0;
   trimesh_mesh = {};
+  weapon_instance_index = 0;
+  attachment_host_instance_index = 0;
   return scene;
 }
 

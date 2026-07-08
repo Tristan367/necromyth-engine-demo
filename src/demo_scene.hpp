@@ -19,11 +19,17 @@ struct PhysicsObjDesc {
   float p3{0.5F};       // Tapered: bottom_radius
 };
 
+struct WeaponAttachmentInfo {
+  std::uint32_t weapon_instance{};
+  std::uint32_t host_instance{};
+};
+
 void populate_demo_scene(engine::Scene &scene);
 [[nodiscard]] auto create_demo_scene(
     std::vector<PhysicsObjDesc> *out_obj_descs = nullptr,
     std::uint32_t *out_char_instance = nullptr,
-    engine::MeshSource *out_trimesh_mesh = nullptr) -> engine::Scene;
+    engine::MeshSource *out_trimesh_mesh = nullptr,
+    WeaponAttachmentInfo *out_weapon_info = nullptr) -> engine::Scene;
 void update_demo_scene(engine::Scene &scene);
 
 } // namespace app
