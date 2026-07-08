@@ -103,15 +103,15 @@ struct DemoApp::Impl {
     auto &ps = vulkan.particle_system();
     snow_emitter_ = ps.add_emitter({
         .position = {0.0F, 20.0F, 0.0F},
-        .rate = 200.0F,
+        .rate = 2000.0F,
         .on_emit = [](engine::ParticleSystem::Particle &p) {
           p.pos += glm::vec3{(rand() % 2000 - 1000) * 0.008F, 0.0F, (rand() % 2000 - 1000) * 0.008F};
-          p.vel = glm::vec3{(rand() % 200 - 100) * 0.01F, -2.0F - (rand() % 200) * 0.01F,
-                            (rand() % 200 - 100) * 0.01F};
-          p.lifetime = 8.0F;
+          // Slow descending drift with horizontal wind sway
+          p.vel = glm::vec3{(rand() % 300 - 150) * 0.003F, -0.8F - (rand() % 100) * 0.004F,
+                            (rand() % 300 - 150) * 0.003F};
+          p.lifetime = 20.0F;
         },
         .on_update = [](engine::ParticleSystem::Particle &p, float dt) -> bool {
-          p.vel.y -= 9.81F * dt;
           p.pos += p.vel * dt;
           return p.pos.y > -2.0F;
         },
