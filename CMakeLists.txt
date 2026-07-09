@@ -65,6 +65,8 @@ add_executable(NecromythDemo
 
 target_compile_definitions(NecromythDemo PRIVATE JPH_DEBUG_RENDERER)
 
+target_compile_options(NecromythDemo PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wno-missing-field-initializers>)
+
 target_link_libraries(NecromythDemo PRIVATE VCE::Engine app_imgui)
 
 target_compile_definitions(NecromythDemo PRIVATE
