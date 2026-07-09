@@ -85,6 +85,9 @@ public:
       }
     }
 
+    char_radius_ = char_radius;
+    char_height_ = char_height;
+
     character_ = std::make_unique<engine::physics::Character>(physics_, glm::vec3{0.0F, 20.0F, 0.0F},
                                                                 char_radius, char_height);
     character_->set_max_strength(20.0F);
@@ -279,7 +282,7 @@ public:
                 JPH::Vec3::sReplicate(1.0F), JPH::Color::sGreen, false, true);
       }
       // Character
-      JPH::Ref<JPH::CapsuleShape> cs(new JPH::CapsuleShape(0.4f, 0.5f));
+      JPH::Ref<JPH::CapsuleShape> cs(new JPH::CapsuleShape(char_radius_, char_height_ * 0.5F));
       const glm::vec3 cp = character_->position();
       cs->Draw(&debug_renderer_,
                JPH::RMat44::sTranslation(JPH::RVec3(cp.x, cp.y, cp.z)),
@@ -352,6 +355,8 @@ private:
   engine::physics::PhysicsWorld physics_;
   std::unique_ptr<engine::physics::Character> character_;
   std::uint32_t character_instance_{};
+  float char_radius_{0.5F};
+  float char_height_{0.8F};
   RenderState render_state_;
   std::vector<PhysicsEntry> physics_bodies_;
   std::unordered_map<std::uint32_t, std::unique_ptr<engine::physics::HitboxManager>> hitbox_managers_;

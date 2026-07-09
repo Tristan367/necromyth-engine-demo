@@ -69,7 +69,6 @@ struct DemoApp::Impl {
     std::cout << "Menu: Resume or Quit. Debug panel: shadow toggles, FPS.\n";
     std::cout << "Audio: positional music at animationTest model\n";
 
-    (void)audio.init();  // no-op now, auto-initialized in constructor
     const auto music_h = audio.load_sound(asset_path("/audio/audioTest.mp3"), /*loop=*/true);
     if (music_h != engine::audio::k_invalid_sound) {
       audio.set_volume(music_h, 0.5F);
