@@ -92,8 +92,8 @@ public:
       engine::HitboxAttachment weapon_hb{};
       weapon_hb.shape = engine::HitboxShape::Box;
       weapon_hb.joint_index = 9;
-      weapon_hb.half_extent = glm::vec3(3.0F, 10.0F, 1.0F);
-      weapon_hb.offset = glm::vec3(0.0F, 10.0F, 0.0F);
+      weapon_hb.half_extent = glm::vec3(1.5F, 5.0F, 0.5F);
+      weapon_hb.offset = glm::vec3(0.0F, 5.0F, 0.0F);
       mgr->add_hitbox("weapon_bigarm", weapon_hb, engine::physics::Layers::kWeapon);
       hitbox_managers_[1] = std::move(mgr);
     }
