@@ -1,0 +1,21 @@
+{
+  "body": {
+    "shape": "capsule",
+    "half_height": 0.4,
+    "radius": 0.5,
+    "offset": [0, 0.4, 0]
+  },
+  "hitboxes": [
+    {"name": "Bone_00", "bone": 0,  "shape": "sphere", "offset": [0,0,0], "radius": 0.08},
+    {"name": "Bone_01", "bone": 1,  "shape": "sphere", "offset": [0,0,0], "radius": 0.08},
+    {"name": "Bone_02", "bone": 2,  "shape": "sphere", "offset": [0,0,0], "radius": 0.08},
+    {"name": "Bone_03", "bone": 3,  "shape": "sphere", "offset": [0,0,0], "radius": 0.08},
+    {"name": "Bone_04", "bone": 4,  "shape": "sphere", "offset": [0,0,0], "radius": 0.10},
+    {"name": "Bone_05", "bone": 5,  "shape": "sphere", "offset": [0,0,0], "radius": 0.07},
+    {"name": "Bone_06", "bone": 6,  "shape": "sphere", "offset": [0,0,0], "radius": 0.07},
+    {"name": "Bone_07", "bone": 7,  "shape": "sphere", "offset": [0,0,0], "radius": 0.06},
+    {"name": "Bone_08", "bone": 8,  "shape": "sphere", "offset": [0,0,0], "radius": 0.06},
+    {"name": "Bone_09", "bone": 9,  "shape": "sphere", "offset": [0,0,0], "radius": 0.06},
+    {"name": "Bone_10", "bone": 10, "shape": "sphere", "offset": [0,0,0], "radius": 0.06}
+  ]
+}

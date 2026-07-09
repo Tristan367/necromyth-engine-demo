@@ -1,6 +1,7 @@
 #pragma once
 
 #include "scene/camera.hpp"
+#include "platform/input_map.hpp"
 
 #define GLM_FORCE_RADIANS
 #include <glm/gtc/constants.hpp>
@@ -59,40 +60,35 @@ public:
     const glm::vec3 forward = camera.look_direction();
     pitch_ = std::asin(std::clamp(forward.y, -1.0F, 1.0F));
     yaw_ = std::atan2(forward.z, forward.x);
+    target_pitch_ = pitch_;
+    target_yaw_ = yaw_;
+  }
+
+  [[nodiscard]] auto forward() const -> glm::vec3 {
+    return orientation_forward();
   }
 
   void handle_event(const SDL_Event &event) {
     if (event.type == SDL_EVENT_WINDOW_FOCUS_LOST)
       release_capture();
     else if (event.type == SDL_EVENT_MOUSE_MOTION && captured_) {
-      yaw_ += event.motion.xrel * mouse_sensitivity_;
-      pitch_ -= event.motion.yrel * mouse_sensitivity_;
-      pitch_ = std::clamp(pitch_, -glm::half_pi<float>() + 0.01F, glm::half_pi<float>() - 0.01F);
+      target_yaw_   += static_cast<float>(event.motion.xrel) * mouse_sensitivity_;
+      target_pitch_ -= static_cast<float>(event.motion.yrel) * mouse_sensitivity_;
+      target_pitch_ = std::clamp(target_pitch_, -glm::half_pi<float>() + 0.01F, glm::half_pi<float>() - 0.01F);
     }
   }
 
-  void update(engine::Camera &camera, float delta_seconds) {
-    const bool *keyboard = SDL_GetKeyboardState(nullptr);
-    if (keyboard == nullptr)
-      return;
+  void update(engine::Camera &camera, float delta_seconds, const engine::InputMap &im) {
+    update_orientation(delta_seconds);
+    update_position(camera, delta_seconds, im);
+  }
 
-    const glm::vec3 forward = orientation_forward();
-    const glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0.0F, 1.0F, 0.0F)));
-    const glm::vec3 up{0.0F, 1.0F, 0.0F};
-
-    const float speed = (keyboard[SDL_SCANCODE_LSHIFT] || keyboard[SDL_SCANCODE_RSHIFT]) ? fast_speed_ : move_speed_;
-    const glm::vec3 velocity =
-        (keyboard[SDL_SCANCODE_W] ? forward : glm::vec3(0.0F)) +
-        (keyboard[SDL_SCANCODE_S] ? -forward : glm::vec3(0.0F)) +
-        (keyboard[SDL_SCANCODE_D] ? right : glm::vec3(0.0F)) +
-        (keyboard[SDL_SCANCODE_A] ? -right : glm::vec3(0.0F)) +
-        (keyboard[SDL_SCANCODE_SPACE] ? up : glm::vec3(0.0F)) +
-        (keyboard[SDL_SCANCODE_C] ? -up : glm::vec3(0.0F));
-
-    if (glm::length(velocity) > 0.0F)
-      position_ += glm::normalize(velocity) * speed * delta_seconds;
-
-    camera.look_at(position_, position_ + forward);
+  void update_orientation(float delta_seconds) {
+    const float t = mouse_lerp_factor_ * delta_seconds;
+    pitch_ = std::lerp(pitch_, target_pitch_, t);
+    // Shortest-path yaw: std::remainder gives [-pi, pi] difference
+    yaw_ += std::remainder(target_yaw_ - yaw_, glm::two_pi<float>()) * t;
+    yaw_ = std::remainder(yaw_, glm::two_pi<float>());
   }
 
 private:
@@ -105,13 +101,38 @@ private:
     });
   }
 
+  void update_position(engine::Camera &camera, float delta_seconds, const engine::InputMap &im) {
+    const glm::vec3 forward = orientation_forward();
+    const glm::vec3 cross_fwd_up = glm::cross(forward, glm::vec3(0.0F, 1.0F, 0.0F));
+    const glm::vec3 right = glm::dot(cross_fwd_up, cross_fwd_up) > 1e-10F
+        ? glm::normalize(cross_fwd_up) : glm::vec3(1.0F, 0.0F, 0.0F);
+    const glm::vec3 up{0.0F, 1.0F, 0.0F};
+
+    const float speed = im.pressed("fly_sprint") ? fast_speed_ : move_speed_;
+    const glm::vec3 velocity =
+        (im.pressed("fly_forward") ? forward : glm::vec3(0.0F)) +
+        (im.pressed("fly_back")    ? -forward : glm::vec3(0.0F)) +
+        (im.pressed("fly_right")   ? right : glm::vec3(0.0F)) +
+        (im.pressed("fly_left")    ? -right : glm::vec3(0.0F)) +
+        (im.pressed("fly_up")      ? up : glm::vec3(0.0F)) +
+        (im.pressed("fly_down")    ? -up : glm::vec3(0.0F));
+
+    if (glm::length(velocity) > 0.0F)
+      position_ += glm::normalize(velocity) * speed * delta_seconds;
+
+    camera.look_at(position_, position_ + forward);
+  }
+
   SDL_Window *window_{nullptr};
   glm::vec3 position_{2.0F, 1.5F, 4.0F};
   float yaw_{};
   float pitch_{};
+  float target_yaw_{};
+  float target_pitch_{};
   float move_speed_{6.0F};
   float fast_speed_{18.0F};
   float mouse_sensitivity_{0.002F};
+  float mouse_lerp_factor_{13.0F};
   bool captured_{false};
 };
 

@@ -7,10 +7,22 @@
 #include "scene/scene.hpp"
 #include "scene/sky_mesh.hpp"
 
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcpp"
+#endif
+#include <tinygltf/json.hpp>
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
+
 #define GLM_FORCE_RADIANS
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <array>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -51,8 +63,10 @@ constexpr auto tile_array_layers = std::array{
     engine::Scene &scene,
     std::unordered_map<std::string, std::uint32_t> &cache,
     const engine::LoadedGltfMaterial &material) -> std::uint32_t {
-  if (!material.base_color_texture_path)
-    throw std::runtime_error("glTF primitive is missing a base color texture path");
+  if (!material.base_color_texture_path) {
+    std::cerr << "Warning: glTF primitive missing base color texture, using fallback\n";
+    return add_cached_texture(scene, cache, std::string(asset_path("/textures/gray.png")));
+  }
 
   return add_cached_texture(scene, cache, *material.base_color_texture_path);
 }
@@ -62,6 +76,89 @@ constexpr auto tile_array_layers = std::array{
 [[nodiscard]] auto asset_path(std::string_view relative) -> std::string {
   return std::string(APP_ASSETS_DIR) + std::string(relative);
 }
+
+namespace {
+
+void load_model_metadata(const std::string &gltf_path, engine::SkeletonAsset &skeleton) {
+  const std::filesystem::path p(gltf_path);
+  const std::filesystem::path json_path =
+      p.parent_path() / (p.stem().string() + ".json");
+  if (!std::filesystem::exists(json_path))
+    return;
+
+  std::ifstream file(json_path);
+  if (!file)
+    return;
+
+  const nlohmann::json root = nlohmann::json::parse(file, nullptr, false);
+  if (root.is_discarded())
+    return;
+
+  auto resolve_bone = [&](const nlohmann::json &bone_ref) -> std::optional<std::uint32_t> {
+    if (bone_ref.is_number_unsigned())
+      return bone_ref.get<std::uint32_t>();
+    if (bone_ref.is_string())
+      return skeleton.find_joint_index(bone_ref.get<std::string>());
+    return std::nullopt;
+  };
+
+  if (auto it = root.find("body"); it != root.end()) {
+    const auto &body = *it;
+    engine::BodyColliderDef def;
+    if (body.find("half_height") != body.end()) def.half_height = body["half_height"].get<float>();
+    if (body.find("radius") != body.end()) def.radius = body["radius"].get<float>();
+    if (body.find("offset") != body.end() && body["offset"].is_array())
+      def.offset = glm::vec3(body["offset"][0].get<float>(),
+                             body["offset"][1].get<float>(),
+                             body["offset"][2].get<float>());
+    const std::string shape_str = body.value("shape", "capsule");
+    if (shape_str == "cylinder") def.shape = engine::BodyColliderDef::Shape::Cylinder;
+    else if (shape_str == "box") def.shape = engine::BodyColliderDef::Shape::Box;
+    else if (shape_str == "sphere") def.shape = engine::BodyColliderDef::Shape::Sphere;
+    skeleton.body_collider = def;
+  }
+
+  if (auto it = root.find("hitboxes"); it != root.end() && it->is_array()) {
+    for (const auto &hb : *it) {
+      if (hb.find("bone") == hb.end() || hb.find("shape") == hb.end())
+        continue;
+
+      auto bone_idx = resolve_bone(hb["bone"]);
+      if (!bone_idx || *bone_idx >= skeleton.joint_nodes.size())
+        continue;
+
+      engine::HitboxAttachment a;
+      a.name = hb.value("name", "");
+      a.joint_index = *bone_idx;
+
+      const std::string shape = hb["shape"].get<std::string>();
+      if (shape == "box") a.shape = engine::HitboxShape::Box;
+      else if (shape == "sphere") a.shape = engine::HitboxShape::Sphere;
+      else a.shape = engine::HitboxShape::Capsule;
+
+      if (hb.find("offset") != hb.end() && hb["offset"].is_array())
+        a.offset = glm::vec3(hb["offset"][0].get<float>(),
+                             hb["offset"][1].get<float>(),
+                             hb["offset"][2].get<float>());
+
+      if (hb.find("radius") != hb.end()) a.half_extent.x = hb["radius"].get<float>();
+      else if (hb.find("half_extent") != hb.end() && hb["half_extent"].is_array())
+        a.half_extent = glm::vec3(hb["half_extent"][0].get<float>(),
+                                  hb["half_extent"][1].get<float>(),
+                                  hb["half_extent"][2].get<float>());
+
+      if (hb.find("half_height") != hb.end()) a.half_height = hb["half_height"].get<float>();
+
+      skeleton.hitboxes.push_back(std::move(a));
+    }
+    if (!skeleton.hitboxes.empty())
+      std::cout << "Loaded " << skeleton.hitboxes.size()
+                << " hitboxes for " << p.stem().string() << " ("
+                << skeleton.joint_names.size() << " bones)\n";
+  }
+}
+
+} // namespace
 
 [[nodiscard]] auto lifted(glm::vec3 position) -> glm::mat4 {
   return glm::translate(glm::mat4(1.0F), glm::vec3(position.x, position.y + k_scene_lift_y, position.z));
@@ -146,6 +243,46 @@ void add_demo_sphere_instances(
       texture_cache,
       sphere_gltf,
       lifted(glm::translate(glm::mat4(1.0F), glm::vec3(1.6F, 2.4F, -2.0F)) * glm::scale(glm::mat4(1.0F), glm::vec3(0.9F))));
+}
+
+void add_animation_test_model(
+    engine::Scene &scene,
+    std::unordered_map<std::string, std::uint32_t> & /*texture_cache*/) {
+  const auto before_anims = scene.animations().size();
+  const auto result = engine::import_gltf(scene, asset_path("/models/animationTest.glb"),
+                                           lifted(glm::vec3(0.0F, 1.5F, 0.0F)));
+  if (result.skeleton_index != engine::k_invalid_skin_index) {
+    load_model_metadata(asset_path("/models/animationTest.glb"),
+                        scene.skeletons()[result.skeleton_index]);
+    std::cout << "Loaded animation model with " << (scene.animations().size() - before_anims)
+              << " animations ("
+              << scene.skeletons()[result.skeleton_index].joint_nodes.size() << " bones)\n";
+  }
+}
+
+void add_animation_test_model2(
+    engine::Scene &scene,
+    std::unordered_map<std::string, std::uint32_t> & /*texture_cache*/) {
+  const auto before_anims = scene.animations().size();
+  const auto result = engine::import_gltf(scene, asset_path("/models/animationTest2.glb"),
+                                           lifted(glm::vec3(8.0F, 1.5F, 0.0F)));
+  if (result.skeleton_index != engine::k_invalid_skin_index) {
+    std::cout << "Loaded animation model 2 with " << (scene.animations().size() - before_anims)
+              << " animations ("
+              << scene.skeletons()[result.skeleton_index].joint_nodes.size() << " bones)\n";
+  }
+}
+
+TrimeshData load_trimesh_data() {
+  const engine::LoadedGltfModel model = engine::load_gltf_model(asset_path("/models/trimeshTest.glb"));
+  if (model.primitives.empty())
+    return {};
+  TrimeshData result;
+  result.mesh.vertices = model.primitives.front().mesh.vertices;
+  result.mesh.indices = model.primitives.front().mesh.indices;
+  if (model.primitives.front().material.base_color_texture_path)
+    result.texture_path = *model.primitives.front().material.base_color_texture_path;
+  return result;
 }
 
 } // namespace app
