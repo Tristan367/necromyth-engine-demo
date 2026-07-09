@@ -4,6 +4,7 @@
 #include "scene/mesh_source.hpp"
 
 #include <cstddef>
+#include <numbers>
 
 namespace app {
 
@@ -96,7 +97,7 @@ namespace app {
     return vert;
   };
 
-  const float pi = 3.14159265F;
+  const float pi = std::numbers::pi_v<float>;
   const float two_pi = 2.0F * pi;
 
   for (int ring = 0; ring <= rings; ++ring) {
@@ -138,7 +139,7 @@ namespace app {
     vert.color[0] = 1.0F; vert.color[1] = 1.0F; vert.color[2] = 1.0F;
     return vert;
   };
-  const float two_pi = 2.0F * 3.14159265F;
+  const float two_pi = 2.0F * std::numbers::pi_v<float>;
 
   // Section-based ring allocation: top dome (rings rings), body (2 rings), bottom dome (rings rings)
   // Each dome gets guaranteed curvature regardless of height ratio
@@ -155,7 +156,7 @@ namespace app {
 
   // Top dome
   for (int i = 0; i <= rings; ++i) {
-    float a = (3.14159265F * 0.5F) * static_cast<float>(i) / static_cast<float>(rings);
+    float a = (std::numbers::pi_v<float> * 0.5F) * static_cast<float>(i) / static_cast<float>(rings);
     float y = half_height + top_radius * std::cos(a);
     float r = top_radius * std::sin(a);
     add_ring(y, r, std::cos(a));  // normal Y = cos(a): 1 at pole, 0 at equator
@@ -171,7 +172,7 @@ namespace app {
 
   // Bottom dome: y from -half_height down to bottom pole
   for (int i = rings; i >= 0; --i) {
-    float a = (3.14159265F * 0.5F) * static_cast<float>(i) / static_cast<float>(rings);
+    float a = (std::numbers::pi_v<float> * 0.5F) * static_cast<float>(i) / static_cast<float>(rings);
     float y = -half_height - bottom_radius * std::cos(a);
     float r = bottom_radius * std::sin(a);
     add_ring(y, r, -std::cos(a));
@@ -216,7 +217,7 @@ namespace app {
     return vert;
   };
 
-  const float two_pi = 2.0F * 3.14159265F;
+  const float two_pi = 2.0F * std::numbers::pi_v<float>;
 
   // Body vertices: bottom ring + top ring
   for (int seg = 0; seg <= segments; ++seg) {

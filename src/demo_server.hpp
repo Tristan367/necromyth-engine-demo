@@ -58,6 +58,8 @@ public:
       case app::TestObjShape::TaperedCylinder:
         body_id = physics_.add_tapered_cylinder(desc.p1.x, desc.p2, desc.p3, pos);
         break;
+      default:
+        continue;
       }
 
       physics_bodies_.push_back({body_id, desc.instance_index});

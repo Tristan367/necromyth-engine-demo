@@ -79,7 +79,7 @@ public:
                     JPH::ColorArg color, const GeometryRef &geo,
                     ECullMode, ECastShadow, EDrawMode draw_mode) override {
     if (draw_mode != EDrawMode::Wireframe) return;
-    // Use second-lowest LOD for a balance of detail vs performance
+    if (geo->mLODs.empty()) return;
     size_t lod_idx = geo->mLODs.size() > 1 ? geo->mLODs.size() - 2 : 0;
     const LOD &lod = geo->mLODs[lod_idx];
     auto *batch = static_cast<const debug_renderer_detail::BatchImpl *>(lod.mTriangleBatch.GetPtr());

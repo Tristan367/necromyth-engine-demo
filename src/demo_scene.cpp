@@ -104,8 +104,6 @@ void populate_demo_scene(engine::Scene &scene) {
       -15.0F,
       glm::vec3(0.0F, 1.0F, 0.0F));
 
-  add_demo_sphere_instances(scene, texture_cache);
-
   const glm::mat4 suzanne_base = lifted(glm::vec3(-1.0F, 1.5F, 1.5F)) *
                                  glm::scale(glm::mat4(1.0F), glm::vec3(0.35F)) * assets.suzanne_node_transform;
   demo_anim_add(
