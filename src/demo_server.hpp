@@ -86,15 +86,19 @@ public:
       }
     }
 
-    // Weapon hitbox on model2's bigarm tip (joint 9)
+    // Weapon hitboxes on model2's arm tips (joint 9 = bigarm, joint 5 = littlearm)
     if (scene_.skeletons().size() > 1) {
       auto mgr = std::make_unique<engine::physics::HitboxManager>(physics_);
       engine::HitboxAttachment weapon_hb{};
       weapon_hb.shape = engine::HitboxShape::Box;
-      weapon_hb.joint_index = 9;
       weapon_hb.half_extent = glm::vec3(0.5F, 5.0F, 1.5F);
       weapon_hb.offset = glm::vec3(0.0F, 5.0F, 0.0F);
+
+      weapon_hb.joint_index = 9;
       mgr->add_hitbox("weapon_bigarm", weapon_hb, engine::physics::Layers::kWeapon);
+      weapon_hb.joint_index = 5;
+      mgr->add_hitbox("weapon_littlearm", weapon_hb, engine::physics::Layers::kWeapon);
+
       hitbox_managers_[1] = std::move(mgr);
     }
 
