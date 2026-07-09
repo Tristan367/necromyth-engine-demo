@@ -79,10 +79,23 @@ public:
         }
       }
       if (!skel.hitboxes.empty()) {
-        auto mgr = std::make_unique<engine::physics::HitboxManager>(physics_, skel);
+        auto mgr = std::make_unique<engine::physics::HitboxManager>(physics_);
+        mgr->add_hitboxes_from_json(skel);
         hitbox_managers_[static_cast<std::uint32_t>(
             std::distance(scene_.skeletons().data(), &skel))] = std::move(mgr);
       }
+    }
+
+    // Weapon hitbox on model2's bigarm tip (joint 9)
+    if (scene_.skeletons().size() > 1) {
+      auto mgr = std::make_unique<engine::physics::HitboxManager>(physics_);
+      engine::HitboxAttachment weapon_hb{};
+      weapon_hb.shape = engine::HitboxShape::Box;
+      weapon_hb.joint_index = 9;
+      weapon_hb.half_extent = glm::vec3(0.3F, 0.3F, 5.0F);
+      weapon_hb.offset = glm::vec3(0.0F, 0.0F, 4.0F);
+      mgr->add_hitbox("weapon_bigarm", weapon_hb, engine::physics::Layers::kWeapon);
+      hitbox_managers_[1] = std::move(mgr);
     }
 
     char_radius_ = char_radius;
@@ -287,14 +300,16 @@ public:
       cs->Draw(&debug_renderer_,
                JPH::RMat44::sTranslation(JPH::RVec3(cp.x, cp.y, cp.z)),
                JPH::Vec3::sReplicate(1.0F), JPH::Color::sRed, false, true);
-      // Hitbox bodies (already in Jolt, just needs to be drawn)
+      // Hitbox bodies (yellow = body-part, cyan = weapon)
       for (auto &[skin_idx, mgr] : hitbox_managers_) {
         for (const auto &hb : mgr->hitbox_bodies()) {
           JPH::BodyLockRead lock(physics_.physics_system().GetBodyLockInterface(), hb.body_id);
           if (!lock.Succeeded()) continue;
+          const bool is_weapon = lock.GetBody().GetObjectLayer() == engine::physics::Layers::kWeapon;
           const JPH::Shape *s = lock.GetBody().GetShape();
           s->Draw(&debug_renderer_, lock.GetBody().GetWorldTransform(),
-                  JPH::Vec3::sReplicate(1.0F), JPH::Color::sYellow, false, true);
+                  JPH::Vec3::sReplicate(1.0F),
+                  is_weapon ? JPH::Color::sCyan : JPH::Color::sYellow, false, true);
         }
       }
     }
@@ -331,7 +346,7 @@ private:
       for (glm::mat4 &bw : bone_worlds)
         bw = instance.model * bw;
 
-      it->second->update(scene_.skeletons()[instance.skin_index], bone_worlds);
+      it->second->update(bone_worlds);
     }
   }
 
