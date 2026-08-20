@@ -16,7 +16,7 @@
 #pragma GCC diagnostic pop
 #endif
 
-#define GLM_FORCE_RADIANS
+#include "engine_glm.hpp"  // VCE::Engine sets the glm conventions target-wide
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <array>
