@@ -129,11 +129,11 @@ public:
 
     for (engine::MeshInstance &inst : scene_.instances())
       if (inst.skin_index != engine::k_invalid_skin_index) {
-        inst.joint_overrides = &joint_overrides_;
+        inst.joint_overrides = joint_overrides_;
         if (inst.skin_index == 0)
-          inst.pose_layers = &anim_state_.layers();
+          inst.pose_layers = anim_state_.shared_layers();
         else
-          inst.pose_layers = &anim_state_2_.layers();
+          inst.pose_layers = anim_state_2_.shared_layers();
       }
 
   }
@@ -167,7 +167,7 @@ public:
   void toggle_bone_override() {
     bone_override_active_ = !bone_override_active_;
     if (!bone_override_active_)
-      joint_overrides_.clear();
+      joint_overrides_->clear();
   }
 
   void toggle_directional_light() {
@@ -180,7 +180,7 @@ public:
     if (!bone_override_active_)
       return;
     const float t = static_cast<float>(SDL_GetTicks()) * 0.001f;
-    joint_overrides_[10] = engine::BoneTRS{
+    (*joint_overrides_)[10] = engine::BoneTRS{
         .translation = glm::vec3{0.0F, std::sin(t * 3.0F) * 0.3F, 0.0F},
         .rotation = glm::angleAxis(std::sin(t * 10.0F) * 1.5F, glm::vec3{1.0F, 0.0F, 0.0F}),
     };
@@ -382,7 +382,10 @@ private:
   std::vector<std::uint32_t> secondary_joints_{4, 5, 6, 7, 8, 9, 10}; // model1 override mask
   std::vector<std::uint32_t> bigarm_mask_{6, 7, 8, 9};                 // model2 layer 0 mask
   std::vector<std::uint32_t> littlearm_mask_{3, 4, 5};                // model2 layer 1 mask
-  std::unordered_map<std::uint32_t, engine::BoneTRS> joint_overrides_;
+  // Shared with the instances that read it, so it cannot dangle if this server
+  // is moved. See engine MeshInstance::joint_overrides.
+  std::shared_ptr<std::unordered_map<std::uint32_t, engine::BoneTRS>> joint_overrides_ =
+      std::make_shared<std::unordered_map<std::uint32_t, engine::BoneTRS>>();
   bool bone_override_active_{false};
   bool dir_light_on_{true};
   engine::AnimStateMachine anim_state_;
