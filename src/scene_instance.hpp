@@ -8,27 +8,26 @@
 
 namespace app {
 
-// Stable handle to a MeshInstance index; valid while instances are only appended.
+// Thin wrapper over engine::InstanceHandle. The handle carries a generation, so
+// this stays correct when instances are removed and their slots reused -- which
+// the previous bare-index version explicitly did not.
 class SceneInstance {
 public:
   SceneInstance() = default;
 
-  explicit SceneInstance(std::uint32_t index) : index_(index) {}
+  explicit SceneInstance(engine::InstanceHandle handle) : handle_(handle) {}
 
-  [[nodiscard]] auto valid() const -> bool {
-    return index_ != k_invalid;
-  }
+  [[nodiscard]] auto handle() const -> engine::InstanceHandle { return handle_; }
+
+  [[nodiscard]] auto valid() const -> bool { return handle_.is_set(); }
 
   void set_model(engine::Scene &scene, const glm::mat4 &model) const {
-    if (!valid())
-      return;
-
-    scene.instance(index_).model = model;
+    if (engine::MeshInstance *instance = scene.try_instance(handle_))
+      instance->model = model;
   }
 
 private:
-  static constexpr std::uint32_t k_invalid = UINT32_MAX;
-  std::uint32_t index_{k_invalid};
+  engine::InstanceHandle handle_{};
 };
 
 } // namespace app

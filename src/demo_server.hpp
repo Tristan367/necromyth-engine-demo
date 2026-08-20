@@ -24,7 +24,7 @@
 class DemoServer {
 public:
   explicit DemoServer(engine::Scene &scene, const std::vector<app::PhysicsObjDesc> &obj_descs,
-                       std::uint32_t character_instance, const engine::MeshSource *trimesh_source)
+                       engine::InstanceHandle character_instance, const engine::MeshSource *trimesh_source)
       : scene_{scene}, physics_(65536), character_instance_{character_instance} {
     if (trimesh_source && !trimesh_source->vertices.empty())
       (void)physics_.create_static_mesh(*trimesh_source, glm::vec3(0.0F, -3.0F, 0.0F));
@@ -33,7 +33,7 @@ public:
                           JPH::EMotionType::Static, engine::physics::Layers::kNonMoving);
 
     for (const app::PhysicsObjDesc &desc : obj_descs) {
-      const engine::MeshInstance &inst = scene_.instances()[desc.instance_index];
+      const engine::MeshInstance &inst = *scene_.try_instance(desc.instance);
       const glm::vec3 pos{inst.model[3]};
       JPH::BodyID body_id;
 
@@ -62,7 +62,7 @@ public:
         continue;
       }
 
-      physics_bodies_.push_back({body_id, desc.instance_index});
+      physics_bodies_.push_back({body_id, desc.instance});
     }
 
     constexpr float k_default_char_radius = 0.5F;
@@ -271,19 +271,19 @@ public:
     render_state_.curr = char_pos;
 
     for (auto &pb : physics_bodies_) {
-      physics_.sync_body_to_instance(pb.body_id, scene_.instance(pb.instance_index));
+      physics_.sync_body_to_instance(pb.body_id, scene_.instance(pb.instance));
       // Body position = CoM. Shift mesh to geometric center.
       const JPH::Vec3 com = physics_.shape_center_of_mass(pb.body_id);
       if (!com.IsNearZero()) {
         const JPH::Quat rot = physics_.body_interface().GetRotation(pb.body_id);
         const JPH::Vec3 offset = -com;  // geometric center = CoM - CoM_offset
         const JPH::Vec3 world_off = rot * offset;
-        scene_.instance(pb.instance_index).model[3].x += world_off.GetX();
-        scene_.instance(pb.instance_index).model[3].y += world_off.GetY();
-        scene_.instance(pb.instance_index).model[3].z += world_off.GetZ();
+        scene_.instance(pb.instance).model[3].x += world_off.GetX();
+        scene_.instance(pb.instance).model[3].y += world_off.GetY();
+        scene_.instance(pb.instance).model[3].z += world_off.GetZ();
       }
       // Store for interpolation
-      const glm::vec3 p = scene_.instances()[pb.instance_index].model[3];
+      const glm::vec3 p = scene_.instance(pb.instance).model[3];
       pb.prev_pos = pb.curr_pos;
       pb.curr_pos = p;
     }
@@ -327,7 +327,7 @@ public:
     alpha = std::clamp(alpha, 0.0F, 1.0F);
     for (const auto &pb : physics_bodies_) {
       const glm::vec3 p = glm::mix(pb.prev_pos, pb.curr_pos, alpha);
-      glm::mat4 &m = scene_.instance(pb.instance_index).model;
+      glm::mat4 &m = scene_.instance(pb.instance).model;
       m[3] = glm::vec4(p.x, p.y, p.z, 1.0F);
     }
     // Character visual cube too
@@ -360,7 +360,7 @@ private:
 
   struct PhysicsEntry {
     JPH::BodyID body_id;
-    std::uint32_t instance_index;
+    engine::InstanceHandle instance;
     glm::vec3 prev_pos{0, 0, 0};
     glm::vec3 curr_pos{0, 0, 0};
   };
@@ -373,7 +373,7 @@ private:
   engine::Scene &scene_;
   engine::physics::PhysicsWorld physics_;
   std::unique_ptr<engine::physics::Character> character_;
-  std::uint32_t character_instance_{};
+  engine::InstanceHandle character_instance_{};
   float char_radius_{0.5F};
   float char_height_{0.8F};
   RenderState render_state_;

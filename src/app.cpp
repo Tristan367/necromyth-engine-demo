@@ -25,7 +25,7 @@ namespace app {
 struct DemoApp::Impl {
   engine::EngineConfig config;
   std::vector<app::PhysicsObjDesc> obj_descs_;
-  std::uint32_t char_instance_{};
+  engine::InstanceHandle char_instance_{};
   engine::MeshSource trimesh_source_;
   engine::Scene scene;
   engine::EngineRuntime runtime;

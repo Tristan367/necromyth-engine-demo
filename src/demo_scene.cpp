@@ -29,7 +29,7 @@ constexpr std::size_t k_tile_array_layer_count = 6;
 } // namespace
 
 static std::vector<app::PhysicsObjDesc> obj_descs;
-static std::uint32_t character_sphere_index;
+static engine::InstanceHandle character_sphere_index;
 static engine::MeshSource trimesh_mesh;
 
 static void add_physics_test_objects(engine::Scene &scene);
@@ -231,15 +231,14 @@ void populate_demo_scene(engine::Scene &scene) {
                                                       lifted(glm::vec3(8.0F, 1.5F, 0.0F)));
 
     // Find model2's first instance and attach weapons to arm tips
-    for (std::uint32_t i = 0; i < static_cast<std::uint32_t>(scene.instances().size()); ++i) {
-      const engine::MeshInstance &inst = scene.instances()[i];
+    for (engine::MeshInstance &inst : scene.instances()) {
       if (inst.skin_index != engine::k_invalid_skin_index && inst.skin_index > 0) {
-        if (weapon_result.first_instance != 0)
-          scene.instance(i).bone_attachments.push_back(
-              engine::BoneAttachment{.joint_index = 9, .target_instance = weapon_result.first_instance});
-        if (weapon2_result.first_instance != 0)
-          scene.instance(i).bone_attachments.push_back(
-              engine::BoneAttachment{.joint_index = 5, .target_instance = weapon2_result.first_instance});
+        if (weapon_result.first_instance().is_set())
+          inst.bone_attachments.push_back(engine::BoneAttachment{
+              .joint_index = 9, .target_instance = weapon_result.first_instance()});
+        if (weapon2_result.first_instance().is_set())
+          inst.bone_attachments.push_back(engine::BoneAttachment{
+              .joint_index = 5, .target_instance = weapon2_result.first_instance()});
         break;
       }
     }
@@ -281,7 +280,7 @@ void populate_demo_scene(engine::Scene &scene) {
 
 auto create_demo_scene(
     std::vector<app::PhysicsObjDesc> *out_obj_descs,
-    std::uint32_t *out_char_instance,
+    engine::InstanceHandle *out_char_instance,
     engine::MeshSource *out_trimesh_mesh) -> engine::Scene {
   engine::Scene scene;
   populate_demo_scene(scene);
@@ -292,7 +291,7 @@ auto create_demo_scene(
   if (out_trimesh_mesh)
     *out_trimesh_mesh = std::move(trimesh_mesh);
   obj_descs.clear();
-  character_sphere_index = 0;
+  character_sphere_index = {};
   trimesh_mesh = {};
   return scene;
 }
@@ -338,24 +337,24 @@ void add_physics_test_objects(engine::Scene &scene) {
 
     switch (shape) {
     case 0: mesh = app::make_box_mesh(sx, sy, sz);
-            desc = {0, app::TestObjShape::Box, glm::vec3(sx, sy, sz)}; break;
+            desc = {{}, app::TestObjShape::Box, glm::vec3(sx, sy, sz)}; break;
     case 1: mesh = app::make_sphere_mesh(s);
-            desc = {0, app::TestObjShape::Sphere, glm::vec3(s, 0, 0), s}; break;
+            desc = {{}, app::TestObjShape::Sphere, glm::vec3(s, 0, 0), s}; break;
     case 2: mesh = app::make_capsule_mesh(s, s * 1.5F);
-            desc = {0, app::TestObjShape::Capsule, glm::vec3(s * 1.5F, 0, 0), s}; break;
+            desc = {{}, app::TestObjShape::Capsule, glm::vec3(s * 1.5F, 0, 0), s}; break;
     case 3: mesh = app::make_capsule_mesh(s, s * 0.7F, s * 1.2F);
-            desc = {0, app::TestObjShape::TaperedCapsule, glm::vec3(s * 1.2F, 0, 0), s, s * 0.7F}; break;
+            desc = {{}, app::TestObjShape::TaperedCapsule, glm::vec3(s * 1.2F, 0, 0), s, s * 0.7F}; break;
     case 4: mesh = app::make_cylinder_mesh(s, s, s * 1.2F);
-            desc = {0, app::TestObjShape::Cylinder, glm::vec3(s * 1.2F, 0, 0), s}; break;
+            desc = {{}, app::TestObjShape::Cylinder, glm::vec3(s * 1.2F, 0, 0), s}; break;
     case 5: mesh = app::make_cylinder_mesh(s, s * 0.6F, s * 1.5F);
-            desc = {0, app::TestObjShape::TaperedCylinder, glm::vec3(s * 1.5F, 0, 0), s, s * 0.6F}; break;
+            desc = {{}, app::TestObjShape::TaperedCylinder, glm::vec3(s * 1.5F, 0, 0), s, s * 0.6F}; break;
     }
 
     for (auto &vert : mesh.vertices) {
       vert.color[0] = w; vert.color[1] = v; vert.color[2] = b;
     }
 
-    desc.instance_index = scene.add_instance({
+    desc.instance = scene.add_instance({
         .mesh_index = scene.add_mesh(mesh),
         .texture_index = white_tex,
         .model = glm::translate(glm::mat4(1.0F), glm::vec3{x, y, z}),
